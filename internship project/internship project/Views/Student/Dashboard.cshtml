@@ -1,0 +1,85 @@
+﻿@model List<InternHub.Models.InternTask>
+@using InternHub.Models
+@{
+    Layout = "~/Views/Shared/_Layout.cshtml";
+    ViewData["Title"] = "My internship";
+    ViewBag.Eyebrow = "Student";
+    ViewBag.RoleTag = "Student";
+
+    var supervisor = ViewBag.Student?.Supervisor as User;
+    string fullName = User.Identity?.Name ?? "Student";
+    string initials = string.Concat(fullName.Split(' ', StringSplitOptions.RemoveEmptyEntries).Select(w => w[0])).ToUpper();
+    if (initials.Length > 2) initials = initials.Substring(0, 2);
+    if (initials.Length == 0) initials = "?";
+
+    int activeCount = Model.Count(t => t.Status != InternTaskStatus.Approved);
+    int dueSoonCount = Model.Count(t => t.Status != InternTaskStatus.Approved
+        && t.DueDate.HasValue && t.DueDate.Value <= DateTime.UtcNow.AddDays(7) && t.DueDate.Value >= DateTime.UtcNow);
+}
+
+@section SidebarNav {
+    <ul class="nav flex-column gap-1">
+        <li class="nav-item">
+            <a class="nav-link active" asp-controller="Student" asp-action="Dashboard">
+                <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="3" width="7" height="7" /><rect x="14" y="3" width="7" height="7" /><rect x="3" y="14" width="7" height="7" /><rect x="14" y="14" width="7" height="7" /></svg>
+                Overview
+            </a>
+        </li>
+        <li class="nav-item">
+            <a class="nav-link" asp-controller="Student" asp-action="Tasks">
+                <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M9 11l3 3L22 4" /><path d="M21 12v7a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11" /></svg>
+                My tasks <span class="badge bg-white bg-opacity-10 rounded-pill">@Model.Count</span>
+            </a>
+        </li>
+        <li class="nav-item">
+            <a class="nav-link" asp-controller="Messages" asp-action="Index">
+                <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z" /></svg>
+                Messages
+            </a>
+        </li>
+    </ul>
+}
+
+@section SidebarUser {
+    <a href="#" class="sidebar-user text-decoration-none">
+        <div class="avatar avatar-3">@initials</div>
+        <div><strong class="d-block text-white" style="font-size:.85rem;">@fullName</strong><small>Student</small></div>
+    </a>
+}
+
+<div class="row g-3 mb-2">
+    <div class="col-lg-8">
+        <div class="card border-0 shadow-sm h-100">
+            <div class="card-body">
+                @if (supervisor != null)
+                {
+                    <strong class="d-block mb-1">Your supervisor</strong>
+                    <small class="text-muted d-block mb-3">Assigned by admin</small>
+                    <div class="d-flex align-items-center gap-3">
+                        <div class="avatar avatar-lg avatar-2">@supervisor.FirstName[0]@supervisor.LastName[0]</div>
+                        <div><strong class="d-block" style="font-family:var(--f-display);">@supervisor.FullName</strong><small class="text-muted">@supervisor.Email</small></div>
+                        <a asp-controller="Messages" asp-action="Index" class="btn btn-outline-secondary btn-sm ms-auto">Message</a>
+                    </div>
+                }
+                else
+                {
+                    <strong class="d-block mb-1">Your supervisor</strong>
+                    <p class="text-muted small mb-0">You haven't been assigned a supervisor yet — an admin needs to pair you with one before tasks can start.</p>
+                }
+            </div>
+        </div>
+    </div>
+    <div class="col-lg-4">
+        <div class="card border-0 shadow-sm h-100">
+            <div class="card-body">
+                <div class="fs-3 fw-bold" style="font-family:var(--f-display);">@activeCount</div>
+                <div class="text-muted small">Active tasks</div>
+                @if (dueSoonCount > 0)
+                {
+                    <span class="pill pill-idle mt-2">@dueSoonCount due soon</span>
+                }
+                <a asp-controller="Student" asp-action="Tasks" class="btn btn-outline-secondary btn-sm mt-3 d-block">View my tasks →</a>
+            </div>
+        </div>
+    </div>
+</div>

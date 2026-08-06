@@ -1,0 +1,144 @@
+﻿@model List<InternHub.Models.User>
+@using InternHub.Models
+@{
+    Layout = "~/Views/Shared/_Layout.cshtml";
+    ViewData["Title"] = "Assignments";
+    ViewBag.Eyebrow = "Admin";
+    ViewBag.RoleTag = "Admin";
+
+    string fullName = User.Identity?.Name ?? "Admin";
+    string initials = string.Concat(fullName.Split(' ', StringSplitOptions.RemoveEmptyEntries).Select(w => w[0])).ToUpper();
+    if (initials.Length > 2) initials = initials.Substring(0, 2);
+    if (initials.Length == 0) initials = "?";
+
+    var tasks = ViewBag.Tasks as List<InternTask> ?? new List<InternTask>();
+
+    (string cssClass, string label) StatusPill(InternTaskStatus status) => status switch
+    {
+        InternTaskStatus.Assigned => ("pill-idle", "Assigned"),
+        InternTaskStatus.InProgress => ("pill-active", "In progress"),
+        InternTaskStatus.InReview => ("pill-review", "In review"),
+        InternTaskStatus.ChangesRequested => ("pill-overdue", "Changes requested"),
+        InternTaskStatus.Approved => ("pill-active", "Approved"),
+        _ => ("pill-idle", status.ToString())
+    };
+}
+
+@section SidebarNav {
+    <ul class="nav flex-column gap-1">
+        <li class="nav-item">
+            <a class="nav-link" asp-controller="Admin" asp-action="Dashboard">
+                <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="3" width="7" height="7" /><rect x="14" y="3" width="7" height="7" /><rect x="3" y="14" width="7" height="7" /><rect x="14" y="14" width="7" height="7" /></svg>
+                Overview
+            </a>
+        </li>
+        <li class="nav-item">
+            <a class="nav-link" asp-controller="Admin" asp-action="AllUsers">
+                <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M16 21v-2a4 4 0 0 0-4-4H6a4 4 0 0 0-4 4v2" /><circle cx="9" cy="7" r="4" /></svg>
+                All users
+            </a>
+        </li>
+        <li class="nav-item">
+            <a class="nav-link active" asp-controller="Admin" asp-action="Assignments">
+                <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2" /><circle cx="9" cy="7" r="4" /></svg>
+                Assignments
+            </a>
+        </li>
+        <li class="nav-item">
+            <a class="nav-link" asp-controller="Messages" asp-action="Index">
+                <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z" /></svg>
+                Messages &amp; groups
+            </a>
+        </li>
+    </ul>
+}
+
+@section SidebarUser {
+    <a href="#" class="sidebar-user text-decoration-none">
+        <div class="avatar avatar-ink">@initials</div>
+        <div><strong class="d-block text-white" style="font-size:.85rem;">@fullName</strong><small>Admin</small></div>
+    </a>
+}
+
+<ul class="nav nav-tabs mb-3" id="assignTabs">
+    <li class="nav-item"><button class="nav-link active" data-bs-toggle="tab" data-bs-target="#pairings">Supervisor pairings</button></li>
+    <li class="nav-item"><button class="nav-link" data-bs-toggle="tab" data-bs-target="#projects">All projects</button></li>
+</ul>
+
+<div class="tab-content">
+    <div class="tab-pane fade show active" id="pairings">
+        <div class="row g-3">
+            @if (!Model.Any())
+            {
+                <div class="col-12"><div class="card border-0 shadow-sm text-center p-4"><p class="text-muted mb-0">No supervisors yet.</p></div></div>
+            }
+            else
+            {
+                foreach (var sup in Model)
+                {
+                    <div class="col-md-6 col-lg-4">
+                        <div class="card border-0 shadow-sm h-100">
+                            <div class="card-body">
+                                <div class="d-flex align-items-center gap-2 mb-3">
+                                    <div class="avatar avatar-2">@sup.FirstName[0]@sup.LastName[0]</div>
+                                    <div><strong class="d-block">@sup.FullName</strong><small class="text-muted">@sup.Email</small></div>
+                                    <span class="badge bg-white text-dark border ms-auto">@sup.AssignedStudents.Count</span>
+                                </div>
+                                @if (!sup.AssignedStudents.Any())
+                                {
+                                    <p class="text-muted small mb-0">No students assigned yet.</p>
+                                }
+                                else
+                                {
+                                    foreach (var student in sup.AssignedStudents)
+                                    {
+                                        <div class="d-flex align-items-center gap-2 mb-2"><div class="avatar avatar-sm avatar-3">@student.FirstName[0]@student.LastName[0]</div><span class="small">@student.FullName</span></div>
+                                    }
+                                }
+                            </div>
+                        </div>
+                    </div>
+                }
+            }
+            @if ((int)ViewBag.UnassignedCount > 0)
+            {
+                <div class="col-md-6 col-lg-4">
+                    <div class="card border-0 shadow-sm h-100 d-flex align-items-center justify-content-center text-center p-4">
+                        <p class="small text-muted mb-2">@ViewBag.UnassignedCount student(s) still waiting for a supervisor</p>
+                        <a asp-controller="Admin" asp-action="AllUsers" class="btn btn-outline-secondary btn-sm">Go assign</a>
+                    </div>
+                </div>
+            }
+        </div>
+    </div>
+
+    <div class="tab-pane fade" id="projects">
+        <div class="card border-0 shadow-sm">
+            <div class="table-responsive">
+                <table class="table table-hover align-middle mb-0">
+                    <thead class="table-light"><tr><th>Project / task</th><th>Student</th><th>Supervisor</th><th>Due</th><th>Status</th></tr></thead>
+                    <tbody>
+                        @if (!tasks.Any())
+                        {
+                            <tr><td colspan="5" class="text-center text-muted py-4">No tasks assigned yet system-wide.</td></tr>
+                        }
+                        else
+                        {
+                            foreach (var task in tasks)
+                            {
+                                var (cssClass, label) = StatusPill(task.Status);
+                                <tr>
+                                    <td><a asp-controller="Tasks" asp-action="Details" asp-route-id="@task.Id" class="text-decoration-none text-dark fw-semibold">@task.Title</a></td>
+                                    <td class="small">@task.Student.FullName</td>
+                                    <td class="small">@task.Supervisor.FullName</td>
+                                    <td class="small font-mono text-muted">@(task.DueDate?.ToString("MMM d") ?? "—")</td>
+                                    <td><span class="pill @cssClass"><span class="dot"></span>@label</span></td>
+                                </tr>
+                            }
+                        }
+                    </tbody>
+                </table>
+            </div>
+        </div>
+    </div>
+</div>

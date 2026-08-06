@@ -1,0 +1,115 @@
+﻿@{
+    Layout = null;
+    ViewData["Title"] = "Sign in";
+}
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>Sign in - InternHub</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com" />
+    <link href="https://fonts.googleapis.com/css2?family=Sora:wght@600;700;800&family=Inter:wght@400;500;600&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet" />
+    <link rel="stylesheet" href="~/lib/bootstrap/dist/css/bootstrap.min.css" />
+    <link rel="stylesheet" href="~/css/site.css" asp-append-version="true" />
+    <style>
+            body {
+                background: var(--brand-ink);
+            }
+
+            .thread-stop .dot {
+                width: 40px;
+                height: 40px;
+                border-radius: 50%;
+                display: flex;
+                align-items: center;
+                justify-content: center;
+                font-family: var(--f-display);
+                font-weight: 700;
+                font-size: 13px;
+                color: #fff;
+                position: relative;
+            }
+
+                .thread-stop .dot::after {
+                    content: '';
+                    position: absolute;
+                    inset: -6px;
+                    border-radius: 50%;
+                    border: 1.5px solid currentColor;
+                    opacity: 0;
+                    animation: pulse-ring 2.6s ease-out infinite;
+                }
+
+            .thread-line {
+                height: 1.5px;
+                background: linear-gradient(90deg, rgba(255,255,255,.05), rgba(255,255,255,.35), rgba(255,255,255,.05));
+                flex: 1;
+                margin-top: -18px;
+            }
+
+            .first-user-note {
+                background: var(--brand-accent-soft);
+                border: 1px solid #C9DCFB;
+                color: #1E4FB8;
+                border-radius: .5rem;
+                font-size: .8rem;
+            }
+    </style>
+</head>
+<body>
+    <div class="row g-0" style="min-height:100vh;">
+        <div class="col-lg-6 d-none d-lg-flex flex-column justify-content-between brand-hero p-5">
+            <div class="mark" style="width:42px;height:42px;border-radius:12px;background:linear-gradient(135deg,var(--bs-primary),var(--brand-accent));display:flex;align-items:center;justify-content:center;font-family:var(--f-display);font-weight:700;">IH</div>
+
+            <div style="max-width:460px;">
+                <span class="d-block font-mono text-uppercase mb-3" style="font-size:.75rem;letter-spacing:.08em;color:#6FC9C2;">Internship Portal</span>
+                <h1 class="display-6 fw-bold" style="font-family:var(--f-display);">Every mentorship, running live.</h1>
+                <p class="mt-3" style="color:#9FB8BC;">Admins assign supervisors, supervisors assign work, students showcase it — with one real-time thread connecting all three.</p>
+
+                <div class="d-flex align-items-center gap-2 my-4">
+                    <div class="thread-stop text-center"><div class="dot bg-dark">A</div><small class="d-block font-mono text-uppercase mt-1" style="color:#7E9CA1;font-size:10px;">Admin</small></div>
+                    <div class="thread-line"></div>
+                    <div class="thread-stop text-center"><div class="dot" style="background:var(--brand-accent);">S</div><small class="d-block font-mono text-uppercase mt-1" style="color:#7E9CA1;font-size:10px;">Supervisor</small></div>
+                    <div class="thread-line"></div>
+                    <div class="thread-stop text-center"><div class="dot" style="background:var(--bs-primary);">St</div><small class="d-block font-mono text-uppercase mt-1" style="color:#7E9CA1;font-size:10px;">Student</small></div>
+                </div>
+            </div>
+
+            <div class="d-flex gap-4 pt-3" style="border-top:1px solid rgba(255,255,255,.1);">
+                <div><strong class="d-block fs-4" style="font-family:var(--f-display);">128</strong><small style="color:#7E9CA1;">Active internships</small></div>
+                <div><strong class="d-block fs-4" style="font-family:var(--f-display);">34</strong><small style="color:#7E9CA1;">Supervisors online</small></div>
+                <div><strong class="d-block fs-4" style="font-family:var(--f-display);">&lt; 1s</strong><small style="color:#7E9CA1;">Message latency</small></div>
+            </div>
+        </div>
+
+        <div class="col-lg-6 d-flex align-items-center justify-content-center bg-body p-4">
+            <div style="width:100%;max-width:380px;">
+                <h2 class="fw-bold mb-1">Welcome back</h2>
+                <p class="text-muted mb-4">Sign in to your dashboard. Your role decides what you see next.</p>
+
+                <form asp-controller="Account" asp-action="Login" method="post">
+                    @Html.AntiForgeryToken()
+                    <div class="mb-3">
+                        <label class="form-label fw-semibold" for="email">Email address</label>
+                        <input class="form-control" type="email" id="email" name="email" placeholder="you@university.edu" required />
+                    </div>
+                    <div class="mb-3">
+                        <label class="form-label fw-semibold" for="password">Password</label>
+                        <input class="form-control" type="password" id="password" name="password" placeholder="••••••••" required />
+                    </div>
+                    <div class="d-flex justify-content-between align-items-center mb-3" style="font-size:.85rem;">
+                        <label class="form-check-label d-flex align-items-center gap-2"><input class="form-check-input" type="checkbox" /> Keep me signed in</label>
+                        <a href="#">Forgot password?</a>
+                    </div>
+                    <button type="submit" class="btn btn-primary w-100">Sign in →</button>
+
+                    <div class="first-user-note p-3 mt-3">First account created on InternHub automatically becomes the Admin.</div>
+                </form>
+
+                <div class="text-center text-muted mt-3" style="font-size:.9rem;">Don't have an account? <a asp-controller="Account" asp-action="Register">Register</a></div>
+            </div>
+        </div>
+    </div>
+</body>
+</html>

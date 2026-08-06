@@ -1,0 +1,95 @@
+﻿@using InternHub.Models
+@{
+    Layout = "~/Views/Shared/_Layout.cshtml";
+    ViewData["Title"] = "My students";
+    ViewBag.Eyebrow = "Supervisor";
+    ViewBag.RoleTag = "Supervisor";
+
+    var students = ViewBag.Students as List<User> ?? new List<User>();
+    string fullName = User.Identity?.Name ?? "Supervisor";
+    string initials = string.Concat(fullName.Split(' ', StringSplitOptions.RemoveEmptyEntries).Select(w => w[0])).ToUpper();
+    if (initials.Length > 2) initials = initials.Substring(0, 2);
+    if (initials.Length == 0) initials = "?";
+}
+
+@section SidebarNav {
+    <ul class="nav flex-column gap-1">
+        <li class="nav-item">
+            <a class="nav-link active" asp-controller="Supervisor" asp-action="Dashboard">
+                <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2" /><circle cx="9" cy="7" r="4" /></svg>
+                My students <span class="badge bg-white bg-opacity-10 rounded-pill">@students.Count</span>
+            </a>
+        </li>
+        <li class="nav-item">
+            <a class="nav-link" asp-controller="Supervisor" asp-action="Tasks">
+                <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M9 11l3 3L22 4" /><path d="M21 12v7a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11" /></svg>
+                Tasks <span class="badge bg-white bg-opacity-10 rounded-pill">@ViewBag.TaskCount</span>
+            </a>
+        </li>
+        <li class="nav-item">
+            <a class="nav-link" asp-controller="Messages" asp-action="Index">
+                <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z" /></svg>
+                Messages &amp; groups
+            </a>
+        </li>
+    </ul>
+}
+
+@section SidebarUser {
+    <a href="#" class="sidebar-user text-decoration-none">
+        <div class="avatar avatar-2">@initials</div>
+        <div><strong class="d-block text-white" style="font-size:.85rem;">@fullName</strong><small>Supervisor</small></div>
+    </a>
+}
+
+@section TopbarActions {
+    <a asp-controller="Supervisor" asp-action="Tasks" class="btn btn-accent btn-sm">+ Assign task</a>
+}
+
+<div class="row g-3 mb-3">
+    <div class="col-md-6">
+        <div class="card border-0 shadow-sm h-100">
+            <div class="card-body">
+                <div class="fs-3 fw-bold" style="font-family:var(--f-display);">@students.Count</div>
+                <div class="text-muted small">Students assigned</div>
+            </div>
+        </div>
+    </div>
+    <div class="col-md-6">
+        <div class="card border-0 shadow-sm h-100">
+            <div class="card-body">
+                <div class="fs-3 fw-bold" style="font-family:var(--f-display);">@ViewBag.ReviewCount</div>
+                <div class="text-muted small">Awaiting your review</div>
+                <a asp-controller="Supervisor" asp-action="Tasks" class="btn btn-outline-secondary btn-sm mt-2">View tasks →</a>
+            </div>
+        </div>
+    </div>
+</div>
+
+<div class="row g-3">
+    @if (!students.Any())
+    {
+        <div class="col-12">
+            <div class="card border-0 shadow-sm text-center p-4">
+                <p class="text-muted mb-0">No students assigned yet — ask an admin to pair one with you.</p>
+            </div>
+        </div>
+    }
+    else
+    {
+        foreach (var student in students)
+        {
+            <div class="col-md-4">
+                <div class="card border-0 shadow-sm h-100">
+                    <div class="card-body">
+                        <div class="d-flex align-items-center gap-2 mb-2">
+                            <div class="avatar avatar-3">@student.FirstName[0]@student.LastName[0]</div>
+                            <div><strong class="d-block">@student.FullName</strong><small class="text-muted">@student.Email</small></div>
+                        </div>
+                        <a asp-controller="Messages" asp-action="Index" class="btn btn-outline-secondary btn-sm">Message</a>
+                    </div>
+                </div>
+            </div>
+        }
+    }
+</div>

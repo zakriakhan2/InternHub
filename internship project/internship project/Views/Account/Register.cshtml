@@ -1,0 +1,109 @@
+﻿@{
+    Layout = null;
+    ViewData["Title"] = "Register";
+}
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>Register - InternHub</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com" />
+    <link href="https://fonts.googleapis.com/css2?family=Sora:wght@600;700;800&family=Inter:wght@400;500;600&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet" />
+    <link rel="stylesheet" href="~/lib/bootstrap/dist/css/bootstrap.min.css" />
+    <link rel="stylesheet" href="~/css/site.css" asp-append-version="true" />
+    <style>
+            body {
+                background: var(--brand-ink);
+            }
+
+            .role-row .r-dot {
+                width: 30px;
+                height: 30px;
+                border-radius: 9px;
+                display: flex;
+                align-items: center;
+                justify-content: center;
+                font-family: var(--f-mono);
+                font-size: 11px;
+                font-weight: 700;
+                flex-shrink: 0;
+            }
+
+            .first-user-note {
+                background: var(--brand-primary-soft);
+                border: 1px solid #BFE3DE;
+                color: #0A5C63;
+                border-radius: .5rem;
+                font-size: .8rem;
+            }
+    </style>
+</head>
+<body>
+    <div class="row g-0" style="min-height:100vh;">
+        <div class="col-lg-6 d-none d-lg-flex flex-column justify-content-between brand-hero p-5">
+            <div class="mark" style="width:42px;height:42px;border-radius:12px;background:linear-gradient(135deg,var(--bs-primary),var(--brand-accent));display:flex;align-items:center;justify-content:center;font-family:var(--f-display);font-weight:700;">IH</div>
+
+            <div style="max-width:460px;">
+                <span class="d-block font-mono text-uppercase mb-3" style="font-size:.75rem;letter-spacing:.08em;color:#6FC9C2;">Internship Portal</span>
+                <h1 class="display-6 fw-bold" style="font-family:var(--f-display);">One account. One role, on day one.</h1>
+                <p class="mt-3" style="color:#9FB8BC;">Register once — your role is set based on how you're added to the portal.</p>
+
+                <div class="d-flex flex-column gap-3 mt-4">
+                    <div class="role-row d-flex gap-3">
+                        <div class="r-dot bg-white bg-opacity-10 text-white">A</div>
+                        <div><strong class="d-block text-white" style="font-size:.85rem;">Admin</strong><small style="color:#8FB3B8;">Automatically assigned to the very first account created on InternHub.</small></div>
+                    </div>
+                    <div class="role-row d-flex gap-3">
+                        <div class="r-dot" style="background:rgba(47,111,237,.2);color:#7FA6F5;">S</div>
+                        <div><strong class="d-block text-white" style="font-size:.85rem;">Supervisor</strong><small style="color:#8FB3B8;">Granted by an admin, or by promoting an existing student.</small></div>
+                    </div>
+                    <div class="role-row d-flex gap-3">
+                        <div class="r-dot" style="background:rgba(14,124,134,.25);color:#6FC9C2;">St</div>
+                        <div><strong class="d-block text-white" style="font-size:.85rem;">Student</strong><small style="color:#8FB3B8;">The default role for everyone who registers after the first account.</small></div>
+                    </div>
+                </div>
+            </div>
+            <div></div>
+        </div>
+
+        <div class="col-lg-6 d-flex align-items-center justify-content-center bg-body p-4">
+            <div style="width:100%;max-width:380px;">
+                <h2 class="fw-bold mb-1">Create your account</h2>
+                <p class="text-muted mb-3">Takes less than a minute.</p>
+
+                <div class="first-user-note p-3 mb-3">No accounts exist yet on this portal — registering now makes you the Admin.</div>
+
+                <form asp-controller="Account" asp-action="Register" method="post">
+                    @Html.AntiForgeryToken()
+                    <div class="row g-2 mb-3">
+                        <div class="col">
+                            <label class="form-label fw-semibold" for="firstName">First name</label>
+                            <input class="form-control" id="firstName" name="firstName" placeholder="Reema" required />
+                        </div>
+                        <div class="col">
+                            <label class="form-label fw-semibold" for="lastName">Last name</label>
+                            <input class="form-control" id="lastName" name="lastName" placeholder="Aslam" required />
+                        </div>
+                    </div>
+                    <div class="mb-3">
+                        <label class="form-label fw-semibold" for="email">Email address</label>
+                        <input class="form-control" type="email" id="email" name="email" placeholder="you@university.edu" required />
+                    </div>
+                    <div class="mb-3">
+                        <label class="form-label fw-semibold" for="password">Password</label>
+                        <input class="form-control" type="password" id="password" name="password" placeholder="At least 8 characters" required />
+                    </div>
+                    <div class="form-check mb-3">
+                        <input class="form-check-input" type="checkbox" id="terms" required />
+                        <label class="form-check-label text-muted" for="terms" style="font-size:.8rem;">I agree to the portal's acceptable use policy and understand my activity is visible to my assigned admin and supervisor.</label>
+                    </div>
+                    <button type="submit" class="btn btn-primary w-100">Create account →</button>
+                </form>
+
+                <div class="text-center text-muted mt-3" style="font-size:.9rem;">Already have an account? <a asp-controller="Account" asp-action="Login">Sign in</a></div>
+            </div>
+        </div>
+    </div>
+</body>
+</html>

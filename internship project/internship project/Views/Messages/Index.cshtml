@@ -1,0 +1,262 @@
+﻿@model IEnumerable<InternHub.Models.Conversation>
+@using InternHub.Models
+@{
+    bool canCreateGroups = !User.IsInRole("Student");
+    ViewData["Title"] = "Messages";
+    ViewBag.Eyebrow = "Messages";
+    ViewBag.RoleTag = User.IsInRole("Admin") ? "Admin" : (User.IsInRole("Supervisor") ? "Supervisor" : "Student");
+
+    string fullName = User.Identity?.Name ?? "User";
+    string initials = string.Concat(fullName.Split(' ', StringSplitOptions.RemoveEmptyEntries).Select(w => w[0])).ToUpper();
+    if (initials.Length > 2) initials = initials.Substring(0, 2);
+    if (initials.Length == 0) initials = "?";
+
+    string avatarClass = User.IsInRole("Admin") ? "avatar-ink" : (User.IsInRole("Supervisor") ? "avatar-2" : "avatar-1");
+}
+
+@section SidebarNav {
+    <ul class="nav flex-column gap-1">
+        @if (User.IsInRole("Admin"))
+        {
+            <li class="nav-item">
+                <a class="nav-link" asp-controller="Admin" asp-action="Dashboard">
+                    <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="3" width="7" height="7" /><rect x="14" y="3" width="7" height="7" /><rect x="3" y="14" width="7" height="7" /><rect x="14" y="14" width="7" height="7" /></svg>
+                    Overview
+                </a>
+            </li>
+            <li class="nav-item">
+                <a class="nav-link" asp-controller="Admin" asp-action="AllUsers">
+                    <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M16 21v-2a4 4 0 0 0-4-4H6a4 4 0 0 0-4 4v2" /><circle cx="9" cy="7" r="4" /></svg>
+                    All users
+                </a>
+            </li>
+            <li class="nav-item">
+                <a class="nav-link" asp-controller="Admin" asp-action="Assignments">
+                    <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2" /><circle cx="9" cy="7" r="4" /></svg>
+                    Assignments
+                </a>
+            </li>
+        }
+        else if (User.IsInRole("Supervisor"))
+        {
+            <li class="nav-item">
+                <a class="nav-link" asp-controller="Supervisor" asp-action="Dashboard">
+                    <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="3" width="7" height="7" /><rect x="14" y="3" width="7" height="7" /><rect x="3" y="14" width="7" height="7" /><rect x="14" y="14" width="7" height="7" /></svg>
+                    Overview
+                </a>
+            </li>
+            <li class="nav-item">
+                <a class="nav-link" asp-controller="Supervisor" asp-action="Tasks">
+                    <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2" /><circle cx="9" cy="7" r="4" /></svg>
+                    Tasks
+                </a>
+            </li>
+        }
+        else
+        {
+            <li class="nav-item">
+                <a class="nav-link" asp-controller="Student" asp-action="Dashboard">
+                    <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="3" width="7" height="7" /><rect x="14" y="3" width="7" height="7" /><rect x="3" y="14" width="7" height="7" /><rect x="14" y="14" width="7" height="7" /></svg>
+                    Overview
+                </a>
+            </li>
+            <li class="nav-item">
+                <a class="nav-link" asp-controller="Student" asp-action="Tasks">
+                    <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2" /><circle cx="9" cy="7" r="4" /></svg>
+                    Tasks
+                </a>
+            </li>
+        }
+        <li class="nav-item">
+            <a class="nav-link active" asp-controller="Messages" asp-action="Index">
+                <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z" /></svg>
+                Messages &amp; groups
+            </a>
+        </li>
+    </ul>
+}
+
+@section SidebarUser {
+    <a href="#" class="sidebar-user text-decoration-none">
+        <div class="avatar @avatarClass">@initials</div>
+        <div><strong class="d-block text-white" style="font-size:.85rem;">@fullName</strong><small>@ViewBag.RoleTag</small></div>
+    </a>
+}
+
+@section TopbarActions {
+    <button class="btn btn-outline-secondary btn-sm" data-bs-toggle="modal" data-bs-target="#modalNewMessage">New message</button>
+    @if (canCreateGroups)
+    {
+        <button class="btn btn-primary btn-sm" data-bs-toggle="modal" data-bs-target="#modalNewGroup">+ New group</button>
+    }
+}
+
+@section Styles {
+    <style>
+        .msg-shell {
+            height: calc(100vh - 138px);
+        }
+
+        @@media (max-width: 900px) {
+            .msg-shell {
+                height: auto;
+            }
+        }
+    </style>
+}
+
+@{
+    int currentUserId = int.Parse(User.FindFirst(System.Security.Claims.ClaimTypes.NameIdentifier)!.Value);
+    var selected = Model.FirstOrDefault(c => c.Id == (int?)ViewBag.SelectedConversationId);
+
+    string ConvTitle(Conversation c) => c.IsGroup
+        ? (c.Name ?? "Group")
+        : (c.Participants.FirstOrDefault(p => p.UserId != currentUserId)?.User.FullName ?? "Conversation");
+
+    string ConvInitials(Conversation c)
+    {
+        var name = ConvTitle(c);
+        var parts = name.Split(' ', StringSplitOptions.RemoveEmptyEntries);
+        var i = string.Concat(parts.Select(w => w[0])).ToUpper();
+        return i.Length > 2 ? i.Substring(0, 2) : (i.Length == 0 ? "?" : i);
+    }
+}
+
+<div class="card border-0 shadow-sm msg-shell">
+    <div class="chat-panel h-100">
+        <div class="chat-list" style="width:300px;">
+            <div class="p-2 border-bottom"><input class="form-control form-control-sm" placeholder="Search conversations…" /></div>
+            @if (!Model.Any())
+            {
+                <div class="p-3 text-center text-muted small">No conversations yet. Use "New message" to start one.</div>
+            }
+            else
+            {
+                foreach (var conv in Model)
+                {
+                    var lastMsg = conv.Messages.OrderByDescending(m => m.SentAt).FirstOrDefault();
+                    <a asp-controller="Messages" asp-action="Index" asp-route-conversationId="@conv.Id" class="conv text-decoration-none text-dark @(conv.Id == (int?)ViewBag.SelectedConversationId ? "active" : "")">
+                        <div class="avatar avatar-sm @(conv.IsGroup ? "avatar-4" : "avatar-2")">@ConvInitials(conv)</div>
+                        <div class="flex-fill">
+                            <div class="d-flex justify-content-between">
+                                <strong class="small">@ConvTitle(conv)</strong>
+                                <small class="text-muted font-mono" style="font-size:10px;">@(lastMsg != null ? lastMsg.SentAt.ToString("h:mm tt") : "")</small>
+                            </div>
+                            <small class="text-muted d-block text-truncate" style="max-width:170px;">@(lastMsg?.Body ?? (conv.IsGroup ? "Group created" : "No messages yet"))</small>
+                        </div>
+                    </a>
+                }
+            }
+        </div>
+
+        <div class="chat-body">
+            @if (selected == null)
+            {
+                <div class="d-flex align-items-center justify-content-center h-100 text-muted small">
+                    Select a conversation, or start a new one.
+                </div>
+            }
+            else
+            {
+                <div class="p-2 px-3 border-bottom d-flex align-items-center gap-2">
+                    <div class="avatar avatar-sm @(selected.IsGroup ? "avatar-4" : "avatar-2")">@ConvInitials(selected)</div>
+                    <strong>@ConvTitle(selected)</strong>
+                </div>
+                <div class="chat-messages">
+                    @if (!selected.Messages.Any())
+                    {
+                        <div class="text-center text-muted small">No messages yet — say hello.</div>
+                    }
+                    else
+                    {
+                        foreach (var msg in selected.Messages.OrderBy(m => m.SentAt))
+                        {
+                            bool mine = msg.SenderId == currentUserId;
+                            <div class="bubble @(mine ? "out" : "in")">
+                                @if (selected.IsGroup && !mine)
+                                {
+                                    <strong class="d-block" style="font-size:11px;">@msg.Sender.FullName</strong>
+                                }
+                                @msg.Body
+                                <span class="time">@msg.SentAt.ToString("h:mm tt")</span>
+                            </div>
+                        }
+                    }
+                </div>
+                <form class="d-flex gap-2 p-2 border-top" asp-controller="Messages" asp-action="Send" method="post">
+                    @Html.AntiForgeryToken()
+                    <input type="hidden" name="conversationId" value="@selected.Id" />
+                    <input class="form-control" name="body" placeholder="Type a message…" autocomplete="off" />
+                    <button class="btn btn-primary" type="submit">Send</button>
+                </form>
+            }
+        </div>
+    </div>
+</div>
+
+<!-- New message modal -->
+<div class="modal fade" id="modalNewMessage" tabindex="-1">
+    <div class="modal-dialog">
+        <div class="modal-content">
+            <form asp-controller="Messages" asp-action="StartConversation" method="post">
+                @Html.AntiForgeryToken()
+                <div class="modal-header">
+                    <div><h5 class="modal-title mb-0">New message</h5><small class="text-muted">Start a direct conversation with anyone.</small></div>
+                    <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+                </div>
+                <div class="modal-body">
+                    <label class="form-label fw-semibold">To</label>
+                    <select class="form-select" name="otherUserId">
+                        @foreach (var u in ViewBag.AllUsers as List<User> ?? new List<User>())
+                        {
+                            <option value="@u.Id">@u.FullName — @u.Role</option>
+                        }
+                    </select>
+                    <div class="form-text">Any role can message any other role.</div>
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-light" data-bs-dismiss="modal">Cancel</button>
+                    <button type="submit" class="btn btn-primary">Start conversation</button>
+                </div>
+            </form>
+        </div>
+    </div>
+</div>
+
+@if (canCreateGroups)
+{
+    <div class="modal fade" id="modalNewGroup" tabindex="-1">
+        <div class="modal-dialog">
+            <div class="modal-content">
+                <form asp-controller="Messages" asp-action="CreateGroup" method="post">
+                    @Html.AntiForgeryToken()
+                    <div class="modal-header">
+                        <div><h5 class="modal-title mb-0">Create a group</h5><small class="text-muted">Students can join groups but can't create them.</small></div>
+                        <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+                    </div>
+                    <div class="modal-body">
+                        <div class="mb-3">
+                            <label class="form-label fw-semibold">Group name</label>
+                            <input class="form-control" name="groupName" placeholder="e.g. Frontend Interns – Fall" />
+                        </div>
+                        <label class="form-label fw-semibold">Add members</label>
+                        <div class="border rounded" style="max-height:220px;overflow-y:auto;">
+                            @foreach (var u in ViewBag.AllUsers as List<User> ?? new List<User>())
+                            {
+                                <div class="d-flex align-items-center gap-2 p-2 border-bottom">
+                                    <div class="avatar avatar-sm avatar-1">@u.FirstName[0]@u.LastName[0]</div>
+                                    <label class="form-check-label flex-fill">@u.FullName — @u.Role</label>
+                                    <input class="form-check-input" type="checkbox" name="memberIds" value="@u.Id" />
+                                </div>
+                            }
+                        </div>
+                    </div>
+                    <div class="modal-footer">
+                        <button type="button" class="btn btn-light" data-bs-dismiss="modal">Cancel</button>
+                        <button type="submit" class="btn btn-primary">Create group</button>
+                    </div>
+                </form>
+            </div>
+        </div>
+    </div>
+}

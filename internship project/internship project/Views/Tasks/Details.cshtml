@@ -1,0 +1,133 @@
+﻿@model InternHub.Models.InternTask
+@using InternHub.Models
+@{
+    bool isSupervisor = User.IsInRole("Supervisor");
+}
+
+<div class="mb-3">
+    <span class="pill @(Model.Status switch
+          {
+              InternTaskStatus.Assigned => "pill-idle",
+              InternTaskStatus.InProgress => "pill-active",
+              InternTaskStatus.InReview => "pill-review",
+              InternTaskStatus.ChangesRequested => "pill-overdue",
+              InternTaskStatus.Approved => "pill-active",
+              _ => "pill-idle"
+          })"><span class="dot"></span>@Model.Status</span>
+</div>
+
+<div class="row g-3">
+    <div class="col-lg-8">
+        <div class="card border-0 shadow-sm">
+            <div class="card-body">
+                <h3 class="h5">@Model.Title</h3>
+                <div class="text-muted small mb-3">Assigned by @Model.Supervisor.FullName · @(Model.DueDate?.ToString("MMM d, yyyy") ?? "No due date") · <span class="font-mono">TASK-@Model.Id.ToString("D4")</span></div>
+                <p>@Model.Description</p>
+
+                @if (isSupervisor)
+                {
+                    <h6 class="mt-4">Submitted work</h6>
+                    @if (!Model.Submissions.Any())
+                    {
+                        <p class="text-muted small">Nothing submitted yet.</p>
+                    }
+                    else
+                    {
+                        foreach (var sub in Model.Submissions.OrderByDescending(s => s.SubmittedAt))
+                        {
+                            <div class="border rounded p-2 mb-2">
+                                <div class="small text-muted font-mono mb-1">@sub.SubmittedAt.ToString("MMM d, h:mm tt")</div>
+                                <p class="small mb-0">@sub.Note</p>
+                                @if (!string.IsNullOrEmpty(sub.AttachmentPath))
+                                {
+                                    <a href="@sub.AttachmentPath" target="_blank" class="small">View attachment</a>
+                                }
+                            </div>
+                        }
+                    }
+                    @if (Model.Status == InternTaskStatus.InReview)
+                    {
+                        <form asp-controller="Tasks" asp-action="Approve" method="post" class="d-flex gap-2 mt-3">
+                            @Html.AntiForgeryToken()
+                            <input type="hidden" name="taskId" value="@Model.Id" />
+                            <button type="submit" class="btn btn-primary btn-sm">Approve</button>
+                        </form>
+                    }
+                }
+                else if (Model.StudentId == int.Parse(User.FindFirst(System.Security.Claims.ClaimTypes.NameIdentifier)!.Value))
+                {
+                    @if (Model.Status != InternTaskStatus.InReview && Model.Status != InternTaskStatus.Approved)
+                    {
+                        <button class="btn btn-primary mt-3" data-bs-toggle="modal" data-bs-target="#modalShowcase">+ Showcase this task</button>
+                    }
+                    else if (Model.Status == InternTaskStatus.InReview)
+                    {
+                        <div class="text-muted small mt-3">Submitted — waiting on your supervisor's review.</div>
+                    }
+                }
+            </div>
+        </div>
+    </div>
+
+    <div class="col-lg-4">
+        <div class="card border-0 shadow-sm mb-3">
+            <div class="card-body">
+                <h6>Status timeline</h6>
+                <ul class="timeline mt-3">
+                    <li><div class="tl-dot"></div><div><strong class="d-block small">Task assigned</strong><small class="text-muted d-block">By @Model.Supervisor.FullName</small><small class="text-muted font-mono">@Model.CreatedAt.ToString("MMM d, h:mm tt")</small></div></li>
+                    @if (Model.Submissions.Any())
+                    {
+                        var latest = Model.Submissions.OrderByDescending(s => s.SubmittedAt).First();
+                        <li><div class="tl-dot"></div><div><strong class="d-block small">Submitted for review</strong><small class="text-muted font-mono">@latest.SubmittedAt.ToString("MMM d, h:mm tt")</small></div></li>
+                    }
+                    @if (Model.Status == InternTaskStatus.Approved)
+                    {
+                        <li><div class="tl-dot"></div><div><strong class="d-block small">Approved</strong></div></li>
+                    }
+                    else
+                    {
+                        <li class="pending"><div class="tl-dot"></div><div><strong class="d-block small">Reviewed</strong><small class="text-muted d-block">Waiting on supervisor</small></div></li>
+                    }
+                </ul>
+            </div>
+        </div>
+
+        <div class="card border-0 shadow-sm">
+            <div class="card-body">
+                <h6>Details</h6>
+                <div class="d-flex justify-content-between small mb-2"><span class="text-muted">Assigned to</span><span>@Model.Student.FullName</span></div>
+                <div class="d-flex justify-content-between small mb-2"><span class="text-muted">Assigned by</span><span>@Model.Supervisor.FullName</span></div>
+                <div class="d-flex justify-content-between small mb-2"><span class="text-muted">Due date</span><span class="font-mono">@(Model.DueDate?.ToString("MMM d, yyyy") ?? "—")</span></div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<div class="modal fade" id="modalShowcase" tabindex="-1">
+    <div class="modal-dialog">
+        <div class="modal-content">
+            <form asp-controller="Student" asp-action="ShowcaseTask" method="post" enctype="multipart/form-data">
+                @Html.AntiForgeryToken()
+                <input type="hidden" name="taskId" value="@Model.Id" />
+                <div class="modal-header">
+                    <div><h5 class="modal-title mb-0">Showcase your work</h5><small class="text-muted">Sent straight to your supervisor for review.</small></div>
+                    <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+                </div>
+                <div class="modal-body">
+                    <div class="mb-3">
+                        <label class="form-label fw-semibold">What did you complete?</label>
+                        <textarea class="form-control" name="note" rows="3" placeholder="Summarize what's ready for review…"></textarea>
+                    </div>
+                    <div class="mb-1">
+                        <label class="form-label fw-semibold">Attach work</label>
+                        <input class="form-control" type="file" name="attachment" />
+                    </div>
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-light" data-bs-dismiss="modal">Cancel</button>
+                    <button type="submit" class="btn btn-primary">Submit for review</button>
+                </div>
+            </form>
+        </div>
+    </div>
+</div>
