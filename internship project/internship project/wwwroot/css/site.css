@@ -122,3 +122,47 @@ h1, h2, h3, h4, h5, .navbar-brand, .btn { font-family: var(--f-display); }
 .validation-summary-valid {
     display: none;
 }
+
+/* ---------- Settings/avatar ---------- */
+img.avatar {
+    object-fit: cover;
+}
+
+/* ---------- Dark mode (first pass — Bootstrap components self-adjust via
+   data-bs-theme; these cover our custom classes that use hardcoded colors) ---------- */
+[data-bs-theme="dark"] {
+    --bs-body-bg: #0F1B22;
+}
+
+    [data-bs-theme="dark"] body {
+        background: var(--bs-body-bg);
+    }
+
+    [data-bs-theme="dark"] header.sticky-top {
+        background: #101B22 !important;
+        border-color: #223038 !important;
+    }
+
+    [data-bs-theme="dark"] .chat-list,
+    [data-bs-theme="dark"] .msg-list-col,
+    [data-bs-theme="dark"] .chat-messages {
+        background: #0B1519;
+    }
+
+    [data-bs-theme="dark"] .bubble.in {
+        background: #16232B;
+        border-color: #223038;
+        color: #E7F1F2;
+    }
+
+    [data-bs-theme="dark"] .chat-list .conv:hover,
+    [data-bs-theme="dark"] .chat-list .conv.active,
+    [data-bs-theme="dark"] .msg-list-col .conv:hover,
+    [data-bs-theme="dark"] .msg-list-col .conv.active {
+        background: #16232B;
+    }
+
+    [data-bs-theme="dark"] .chat-list .conv.active,
+    [data-bs-theme="dark"] .msg-list-col .conv.active {
+        box-shadow: inset 3px 0 0 var(--bs-primary);
+    }

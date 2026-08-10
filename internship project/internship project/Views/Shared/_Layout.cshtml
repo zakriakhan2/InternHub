@@ -1,5 +1,21 @@
-﻿<!DOCTYPE html>
-<html lang="en">
+﻿@{
+    string currentTheme = Context.Request.Cookies["theme"] == "dark" ? "dark" : "light";
+
+    string sbFullName = User?.Identity?.Name ?? "";
+    string sbRole = User?.FindFirst(System.Security.Claims.ClaimTypes.Role)?.Value ?? "";
+    string sbAvatarPath = User?.FindFirst("Avatar")?.Value ?? "";
+    string sbInitials = "";
+    if (!string.IsNullOrWhiteSpace(sbFullName))
+    {
+        var parts = sbFullName.Split(' ', StringSplitOptions.RemoveEmptyEntries);
+        sbInitials = string.Concat(parts.Select(w => w[0])).ToUpper();
+        if (sbInitials.Length > 2) sbInitials = sbInitials.Substring(0, 2);
+    }
+    if (string.IsNullOrEmpty(sbInitials)) sbInitials = "?";
+    string sbAvatarClass = sbRole == "Admin" ? "avatar-ink" : sbRole == "Supervisor" ? "avatar-2" : "avatar-3";
+}
+<!DOCTYPE html>
+<html lang="en" data-bs-theme="@currentTheme">
 <head>
     <meta charset="utf-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1" />
@@ -24,7 +40,24 @@
             @await RenderSectionAsync("SidebarNav", required: false)
 
             <div class="sidebar-footer mt-auto">
-                @await RenderSectionAsync("SidebarUser", required: false)
+                @if (IsSectionDefined("SidebarUser"))
+                {
+                    @await RenderSectionAsync("SidebarUser", required: false)
+                }
+                else
+                {
+                    <a asp-controller="Account" asp-action="Settings" class="sidebar-user text-decoration-none">
+                        @if (!string.IsNullOrEmpty(sbAvatarPath))
+                        {
+                            <img src="@sbAvatarPath" class="avatar" style="object-fit:cover;" alt="" />
+                        }
+                        else
+                        {
+                            <div class="avatar @sbAvatarClass">@sbInitials</div>
+                        }
+                        <div><strong class="d-block text-white" style="font-size:.85rem;">@sbFullName</strong><small>@sbRole · Settings</small></div>
+                    </a>
+                }
             </div>
         </nav>
 
@@ -36,6 +69,23 @@
                 </div>
                 <div class="ms-auto d-flex align-items-center gap-2">
                     @await RenderSectionAsync("TopbarActions", required: false)
+
+                    <form asp-controller="Account" asp-action="SetTheme" method="post" class="d-inline">
+                        @Html.AntiForgeryToken()
+                        <input type="hidden" name="theme" value="@(currentTheme == "dark" ? "light" : "dark")" />
+                        <input type="hidden" name="returnUrl" value="@(Context.Request.Path + Context.Request.QueryString)" />
+                        <button type="submit" class="btn btn-outline-secondary rounded-3" aria-label="Toggle dark mode">
+                            @if (currentTheme == "dark")
+                            {
+                                <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="5" /><path d="M12 1v2M12 21v2M4.22 4.22l1.42 1.42M18.36 18.36l1.42 1.42M1 12h2M21 12h2M4.22 19.78l1.42-1.42M18.36 5.64l1.42-1.42" /></svg>
+                            }
+                            else
+                            {
+                                <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 12.79A9 9 0 1 1 11.21 3 7 7 0 0 0 21 12.79z" /></svg>
+                            }
+                        </button>
+                    </form>
+
                     <button class="btn btn-outline-secondary rounded-3" type="button" aria-label="Notifications">
                         <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M18 8a6 6 0 0 0-12 0c0 7-3 9-3 9h18s-3-2-3-9" /><path d="M13.73 21a2 2 0 0 1-3.46 0" /></svg>
                     </button>

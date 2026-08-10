@@ -7,10 +7,6 @@
     ViewBag.RoleTag = "Student";
 
     var supervisor = ViewBag.Student?.Supervisor as User;
-    string fullName = User.Identity?.Name ?? "Student";
-    string initials = string.Concat(fullName.Split(' ', StringSplitOptions.RemoveEmptyEntries).Select(w => w[0])).ToUpper();
-    if (initials.Length > 2) initials = initials.Substring(0, 2);
-    if (initials.Length == 0) initials = "?";
 
     int activeCount = Model.Count(t => t.Status != InternTaskStatus.Approved);
     int dueSoonCount = Model.Count(t => t.Status != InternTaskStatus.Approved
@@ -38,13 +34,6 @@
             </a>
         </li>
     </ul>
-}
-
-@section SidebarUser {
-    <a href="#" class="sidebar-user text-decoration-none">
-        <div class="avatar avatar-3">@initials</div>
-        <div><strong class="d-block text-white" style="font-size:.85rem;">@fullName</strong><small>Student</small></div>
-    </a>
 }
 
 <div class="row g-3 mb-2">

@@ -6,11 +6,6 @@
     ViewBag.Eyebrow = "Admin";
     ViewBag.RoleTag = "Admin";
 
-    string fullName = User.Identity?.Name ?? "Admin";
-    string initials = string.Concat(fullName.Split(' ', StringSplitOptions.RemoveEmptyEntries).Select(w => w[0])).ToUpper();
-    if (initials.Length > 2) initials = initials.Substring(0, 2);
-    if (initials.Length == 0) initials = "?";
-
     var unassignedStudents = ViewBag.UnassignedStudentsList as List<User> ?? new List<User>();
     var allSupervisors = ViewBag.AllSupervisorsList as List<User> ?? new List<User>();
 
@@ -47,13 +42,6 @@
             </a>
         </li>
     </ul>
-}
-
-@section SidebarUser {
-    <a href="#" class="sidebar-user text-decoration-none">
-        <div class="avatar avatar-ink">@initials</div>
-        <div><strong class="d-block text-white" style="font-size:.85rem;">@fullName</strong><small>Admin</small></div>
-    </a>
 }
 
 @section TopbarActions {

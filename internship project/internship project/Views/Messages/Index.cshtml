@@ -77,9 +77,9 @@
 }
 
 @section SidebarUser {
-    <a href="#" class="sidebar-user text-decoration-none">
+    <a asp-controller="Account" asp-action="Settings" class="sidebar-user text-decoration-none">
         <div class="avatar @avatarClass">@initials</div>
-        <div><strong class="d-block text-white" style="font-size:.85rem;">@fullName</strong><small>@ViewBag.RoleTag</small></div>
+        <div><strong class="d-block text-white" style="font-size:.85rem;">@fullName</strong><small>@ViewBag.RoleTag · Settings</small></div>
     </a>
 }
 

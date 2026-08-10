@@ -40,5 +40,14 @@ namespace InternHub.Models
 
         public ICollection<InternTask> TasksAsStudent { get; set; } = new List<InternTask>();
         public ICollection<InternTask> TasksAsSupervisor { get; set; } = new List<InternTask>();
+
+        // ---- Settings page fields ----
+        public string? ProfilePicturePath { get; set; }
+
+        [MaxLength(500)]
+        public string? Bio { get; set; }
+
+        public bool EmailNotifyOnTaskAssigned { get; set; } = true;
+        public bool EmailNotifyOnTaskReviewed { get; set; } = true;
     }
 }

@@ -1,0 +1,142 @@
+﻿@model InternHub.Models.User
+@{
+    Layout = "~/Views/Shared/_Layout.cshtml";
+    ViewData["Title"] = "Settings";
+    ViewBag.Eyebrow = "Account";
+    ViewBag.RoleTag = Model.Role.ToString();
+}
+
+@section SidebarNav {
+    <ul class="nav flex-column gap-1">
+        @if (Model.Role == InternHub.Models.UserRole.Admin)
+        {
+            <li class="nav-item"><a class="nav-link" asp-controller="Admin" asp-action="Dashboard">Overview</a></li>
+            <li class="nav-item"><a class="nav-link" asp-controller="Admin" asp-action="AllUsers">All users</a></li>
+            <li class="nav-item"><a class="nav-link" asp-controller="Admin" asp-action="Assignments">Assignments</a></li>
+        }
+        else if (Model.Role == InternHub.Models.UserRole.Supervisor)
+        {
+            <li class="nav-item"><a class="nav-link" asp-controller="Supervisor" asp-action="Dashboard">My students</a></li>
+            <li class="nav-item"><a class="nav-link" asp-controller="Supervisor" asp-action="Tasks">Tasks</a></li>
+        }
+        else
+        {
+            <li class="nav-item"><a class="nav-link" asp-controller="Student" asp-action="Dashboard">Overview</a></li>
+            <li class="nav-item"><a class="nav-link" asp-controller="Student" asp-action="Tasks">My tasks</a></li>
+        }
+        <li class="nav-item"><a class="nav-link" asp-controller="Messages" asp-action="Index">Messages</a></li>
+        <li class="nav-item">
+            <a class="nav-link active" asp-controller="Account" asp-action="Settings">
+                <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="3" /><path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 1 1-2.83 2.83l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-4 0v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 1 1-2.83-2.83l.06-.06A1.65 1.65 0 0 0 4.6 15a1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1 0-4h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 1 1 2.83-2.83l.06.06A1.65 1.65 0 0 0 9 4.6a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 4 0v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 1 1 2.83 2.83l-.06.06A1.65 1.65 0 0 0 19.4 9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 0 4h-.09a1.65 1.65 0 0 0-1.51 1z" /></svg>
+                Settings
+            </a>
+        </li>
+    </ul>
+}
+
+@if (TempData["Success"] != null)
+{
+    <div class="alert alert-success py-2 px-3">@TempData["Success"]</div>
+}
+@if (TempData["PasswordError"] != null)
+{
+    <div class="alert alert-danger py-2 px-3">@TempData["PasswordError"]</div>
+}
+<div asp-validation-summary="All" class="alert alert-danger py-2 px-3"></div>
+
+<div class="row g-3">
+    <div class="col-lg-7">
+        <div class="card border-0 shadow-sm mb-3">
+            <div class="card-body">
+                <h3 class="h6 mb-3">Profile</h3>
+                <form asp-controller="Account" asp-action="Settings" method="post" enctype="multipart/form-data">
+                    @Html.AntiForgeryToken()
+
+                    <div class="d-flex align-items-center gap-3 mb-4">
+                        @if (!string.IsNullOrEmpty(Model.ProfilePicturePath))
+                        {
+                            <img src="@Model.ProfilePicturePath" class="avatar avatar-lg" style="object-fit:cover;" alt="" />
+                        }
+                        else
+                        {
+                            <div class="avatar avatar-lg avatar-2">@Model.FirstName[0]@Model.LastName[0]</div>
+                        }
+                        <div>
+                            <label class="form-label small fw-semibold mb-1 d-block">Profile picture</label>
+                            <input class="form-control form-control-sm" type="file" name="avatar" accept="image/*" />
+                        </div>
+                    </div>
+
+                    <div class="row g-2 mb-3">
+                        <div class="col">
+                            <label class="form-label fw-semibold">First name</label>
+                            <input class="form-control" name="firstName" value="@Model.FirstName" required />
+                        </div>
+                        <div class="col">
+                            <label class="form-label fw-semibold">Last name</label>
+                            <input class="form-control" name="lastName" value="@Model.LastName" required />
+                        </div>
+                    </div>
+                    <div class="mb-3">
+                        <label class="form-label fw-semibold">Email</label>
+                        <input class="form-control" type="email" name="email" value="@Model.Email" required />
+                    </div>
+                    <div class="mb-3">
+                        <label class="form-label fw-semibold">About you</label>
+                        <textarea class="form-control" name="bio" rows="3" placeholder="A short bio — visible to your supervisor/students.">@Model.Bio</textarea>
+                    </div>
+
+                    <label class="form-label fw-semibold d-block mb-2">Email me when</label>
+                    <div class="form-check mb-1">
+                        <input class="form-check-input" type="checkbox" name="emailNotifyOnTaskAssigned" value="true" id="notifyAssigned" checked="@Model.EmailNotifyOnTaskAssigned" />
+                        <label class="form-check-label" for="notifyAssigned">A new task is assigned to me</label>
+                    </div>
+                    <div class="form-check mb-3">
+                        <input class="form-check-input" type="checkbox" name="emailNotifyOnTaskReviewed" value="true" id="notifyReviewed" checked="@Model.EmailNotifyOnTaskReviewed" />
+                        <label class="form-check-label" for="notifyReviewed">My submitted work is reviewed</label>
+                    </div>
+
+                    <button type="submit" class="btn btn-primary">Save changes</button>
+                </form>
+            </div>
+        </div>
+
+        <div class="card border-0 shadow-sm">
+            <div class="card-body">
+                <h3 class="h6 mb-3">Change password</h3>
+                <form asp-controller="Account" asp-action="ChangePassword" method="post">
+                    @Html.AntiForgeryToken()
+                    <div class="mb-3">
+                        <label class="form-label fw-semibold">Current password</label>
+                        <input class="form-control" type="password" name="currentPassword" required />
+                    </div>
+                    <div class="row g-2 mb-3">
+                        <div class="col">
+                            <label class="form-label fw-semibold">New password</label>
+                            <input class="form-control" type="password" name="newPassword" required minlength="8" />
+                        </div>
+                        <div class="col">
+                            <label class="form-label fw-semibold">Confirm new password</label>
+                            <input class="form-control" type="password" name="confirmPassword" required minlength="8" />
+                        </div>
+                    </div>
+                    <button type="submit" class="btn btn-outline-secondary">Update password</button>
+                </form>
+            </div>
+        </div>
+    </div>
+
+    <div class="col-lg-5">
+        <div class="card border-0 shadow-sm">
+            <div class="card-body">
+                <h3 class="h6 mb-1">Account</h3>
+                <p class="text-muted small mb-3">Joined @Model.CreatedAt.ToString("MMM d, yyyy")</p>
+                <div class="d-flex justify-content-between small mb-2"><span class="text-muted">Account type</span><span>@Model.Role</span></div>
+                @if (Model.Role == InternHub.Models.UserRole.Student)
+                {
+                    <div class="d-flex justify-content-between small"><span class="text-muted">Supervisor</span><span>@(Model.Supervisor?.FullName ?? "Not assigned")</span></div>
+                }
+            </div>
+        </div>
+    </div>
+</div>

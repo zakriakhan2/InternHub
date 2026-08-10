@@ -6,11 +6,6 @@
     ViewBag.Eyebrow = "Supervisor";
     ViewBag.RoleTag = "Supervisor";
 
-    string fullName = User.Identity?.Name ?? "Supervisor";
-    string initials = string.Concat(fullName.Split(' ', StringSplitOptions.RemoveEmptyEntries).Select(w => w[0])).ToUpper();
-    if (initials.Length > 2) initials = initials.Substring(0, 2);
-    if (initials.Length == 0) initials = "?";
-
     (string cssClass, string label) StatusPill(InternTaskStatus status) => status switch
     {
         InternTaskStatus.Assigned => ("pill-idle", "Assigned"),
@@ -43,13 +38,6 @@
             </a>
         </li>
     </ul>
-}
-
-@section SidebarUser {
-    <a href="#" class="sidebar-user text-decoration-none">
-        <div class="avatar avatar-2">@initials</div>
-        <div><strong class="d-block text-white" style="font-size:.85rem;">@fullName</strong><small>Supervisor</small></div>
-    </a>
 }
 
 @section TopbarActions {
