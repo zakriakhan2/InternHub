@@ -1,0 +1,41 @@
+﻿@model IEnumerable<InternHub.Models.Conversation>
+@{
+    int currentUserId = int.Parse(User.FindFirst(System.Security.Claims.ClaimTypes.NameIdentifier)!.Value);
+    int? selectedId = ViewData["SelectedConversationId"] as int?;
+
+    string ConvTitle(InternHub.Models.Conversation c) => c.IsGroup
+        ? (c.Name ?? "Group")
+        : (c.Participants.FirstOrDefault(p => p.UserId != currentUserId)?.User.FullName ?? "Conversation");
+
+    string ConvInitials(InternHub.Models.Conversation c)
+    {
+        var name = ConvTitle(c);
+        var parts = name.Split(' ', StringSplitOptions.RemoveEmptyEntries);
+        var i = string.Concat(parts.Select(w => w[0])).ToUpper();
+        return i.Length > 2 ? i.Substring(0, 2) : (i.Length == 0 ? "?" : i);
+    }
+}
+<div class="chat-list" id="conversation-list" style="width:300px;">
+    <div class="p-2 border-bottom"><input class="form-control form-control-sm" placeholder="Search conversations…" /></div>
+    @if (!Model.Any())
+    {
+        <div class="p-3 text-center text-muted small">No conversations yet. Use "New message" to start one.</div>
+    }
+    else
+    {
+        foreach (var conv in Model)
+        {
+            var lastMsg = conv.Messages.OrderByDescending(m => m.SentAt).FirstOrDefault();
+            <a asp-controller="Messages" asp-action="Index" asp-route-conversationId="@conv.Id" class="conv text-decoration-none text-dark @(conv.Id == selectedId ? "active" : "")">
+                <div class="avatar avatar-sm @(conv.IsGroup ? "avatar-4" : "avatar-2")">@ConvInitials(conv)</div>
+                <div class="flex-fill">
+                    <div class="d-flex justify-content-between">
+                        <strong class="small">@ConvTitle(conv)</strong>
+                        <small class="text-muted font-mono" style="font-size:10px;">@(lastMsg != null ? lastMsg.SentAt.ToString("h:mm tt") : "")</small>
+                    </div>
+                    <small class="text-muted d-block text-truncate" style="max-width:170px;">@(lastMsg == null ? (conv.IsGroup ? "Group created" : "No messages yet") : (lastMsg.IsDeleted ? "This message was deleted" : lastMsg.Body))</small>
+                </div>
+            </a>
+        }
+    }
+</div>

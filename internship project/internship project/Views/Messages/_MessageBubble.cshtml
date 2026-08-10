@@ -1,0 +1,68 @@
+﻿@model InternHub.Models.Message
+@{
+    int currentUserId = int.Parse(User.FindFirst(System.Security.Claims.ClaimTypes.NameIdentifier)!.Value);
+    bool mine = Model.SenderId == currentUserId;
+    bool isGroup = (bool)(ViewData["IsGroup"] ?? false);
+    int conversationId = (int)(ViewData["ConversationId"] ?? Model.ConversationId);
+}
+<div class="bubble @(mine ? "out" : "in") position-relative" style="padding-right: 28px;" id="msg-@Model.Id" data-message-id="@Model.Id">
+    @if (isGroup && !mine)
+    {
+        <strong class="d-block" style="font-size:11px;">@Model.Sender.FullName</strong>
+    }
+    @if (Model.IsDeleted)
+    {
+        <em class="text-muted small">This message was deleted</em>
+    }
+    else
+    {
+        <span>@Model.Body</span>
+        @if (Model.IsEdited)
+        {
+            <span class="text-muted" style="font-size:10px;"> (edited)</span>
+        }
+    }
+    <span class="time">@Model.SentAt.ToString("h:mm tt")</span>
+    @if (!Model.IsDeleted)
+    {
+        <div class="dropdown d-inline-block position-absolute" style="top:6px; right:6px;">
+            <button class="btn btn-sm btn-link p-0 text-reset" data-bs-toggle="dropdown" style="line-height:1; opacity:0.85;">⋮</button>
+            <ul class="dropdown-menu dropdown-menu-end">
+                <li><a class="dropdown-item" href="#" data-bs-toggle="modal" data-bs-target="#modalForward" data-message-id="@Model.Id">Forward</a></li>
+                @if (mine)
+                {
+                    <li><a class="dropdown-item" href="#" onclick="startEdit(@Model.Id)">Edit</a></li>
+                    <li>
+                        <form asp-controller="Messages" asp-action="DeleteMessageForEveryone" method="post" class="js-ajax-form">
+                            @Html.AntiForgeryToken()
+                            <input type="hidden" name="messageId" value="@Model.Id" />
+                            <input type="hidden" name="conversationId" value="@conversationId" />
+                            <button type="submit" class="dropdown-item text-danger">Delete for everyone</button>
+                        </form>
+                    </li>
+                }
+                <li>
+                    <form asp-controller="Messages" asp-action="DeleteMessageForMe" method="post">
+                        @Html.AntiForgeryToken()
+                        <input type="hidden" name="messageId" value="@Model.Id" />
+                        <input type="hidden" name="conversationId" value="@conversationId" />
+                        <button type="submit" class="dropdown-item">Delete for me</button>
+                    </form>
+                </li>
+            </ul>
+        </div>
+    }
+    @if (mine && !Model.IsDeleted)
+    {
+        <form asp-controller="Messages" asp-action="EditMessage" method="post" class="d-none mt-1 js-ajax-form" id="edit-form-@Model.Id">
+            @Html.AntiForgeryToken()
+            <input type="hidden" name="messageId" value="@Model.Id" />
+            <input type="hidden" name="conversationId" value="@conversationId" />
+            <input class="form-control form-control-sm" name="body" value="@Model.Body" />
+            <div class="mt-1 d-flex gap-1">
+                <button type="submit" class="btn btn-sm btn-primary">Save</button>
+                <button type="button" class="btn btn-sm btn-light" onclick="cancelEdit(@Model.Id)">Cancel</button>
+            </div>
+        </form>
+    }
+</div>

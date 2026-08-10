@@ -120,34 +120,13 @@
         var i = string.Concat(parts.Select(w => w[0])).ToUpper();
         return i.Length > 2 ? i.Substring(0, 2) : (i.Length == 0 ? "?" : i);
     }
+
+    ViewData["SelectedConversationId"] = ViewBag.SelectedConversationId;
 }
 
 <div class="card border-0 shadow-sm msg-shell">
     <div class="chat-panel h-100">
-        <div class="chat-list" style="width:300px;">
-            <div class="p-2 border-bottom"><input class="form-control form-control-sm" placeholder="Search conversations…" /></div>
-            @if (!Model.Any())
-            {
-                <div class="p-3 text-center text-muted small">No conversations yet. Use "New message" to start one.</div>
-            }
-            else
-            {
-                foreach (var conv in Model)
-                {
-                    var lastMsg = conv.Messages.OrderByDescending(m => m.SentAt).FirstOrDefault();
-                    <a asp-controller="Messages" asp-action="Index" asp-route-conversationId="@conv.Id" class="conv text-decoration-none text-dark @(conv.Id == (int?)ViewBag.SelectedConversationId ? "active" : "")">
-                        <div class="avatar avatar-sm @(conv.IsGroup ? "avatar-4" : "avatar-2")">@ConvInitials(conv)</div>
-                        <div class="flex-fill">
-                            <div class="d-flex justify-content-between">
-                                <strong class="small">@ConvTitle(conv)</strong>
-                                <small class="text-muted font-mono" style="font-size:10px;">@(lastMsg != null ? lastMsg.SentAt.ToString("h:mm tt") : "")</small>
-                            </div>
-                            <small class="text-muted d-block text-truncate" style="max-width:170px;">@(lastMsg == null ? (conv.IsGroup ? "Group created" : "No messages yet") : (lastMsg.IsDeleted ? "This message was deleted" : lastMsg.Body))</small>
-                        </div>
-                    </a>
-                }
-            }
-        </div>
+        @await Html.PartialAsync("_ConversationList", Model)
 
         <div class="chat-body">
             @if (selected == null)
@@ -167,81 +146,24 @@
                         <button type="submit" class="btn btn-sm btn-outline-danger">Delete chat</button>
                     </form>
                 </div>
-                <div class="chat-messages">
+                <div class="chat-messages" id="chat-messages" data-conversation-id="@selected.Id">
+                    @{
+                        ViewData["ConversationId"] = selected.Id;
+                        ViewData["IsGroup"] = selected.IsGroup;
+                    }
                     @if (!selected.Messages.Any())
                     {
-                        <div class="text-center text-muted small">No messages yet — say hello.</div>
+                        <div class="text-center text-muted small" data-empty-state>No messages yet — say hello.</div>
                     }
                     else
                     {
                         foreach (var msg in selected.Messages.OrderBy(m => m.SentAt))
                         {
-                            bool mine = msg.SenderId == currentUserId;
-                            <div class="bubble @(mine ? "out" : "in") position-relative" style="padding-right: 28px;">
-                                @if (selected.IsGroup && !mine)
-                                {
-                                    <strong class="d-block" style="font-size:11px;">@msg.Sender.FullName</strong>
-                                }
-                                @if (msg.IsDeleted)
-                                {
-                                    <em class="text-muted small">This message was deleted</em>
-                                }
-                                else
-                                {
-                                    <span>@msg.Body</span>
-                                    @if (msg.IsEdited)
-                                    {
-                                        <span class="text-muted" style="font-size:10px;"> (edited)</span>
-                                    }
-                                }
-                                <span class="time">@msg.SentAt.ToString("h:mm tt")</span>
-                                @if (!msg.IsDeleted)
-                                {
-                                    <div class="dropdown d-inline-block position-absolute" style="top:6px; right:6px;">
-                                        <button class="btn btn-sm btn-link p-0 text-reset" data-bs-toggle="dropdown" style="line-height:1; opacity:0.85;">⋮</button>
-                                        <ul class="dropdown-menu dropdown-menu-end">
-                                            <li><a class="dropdown-item" href="#" data-bs-toggle="modal" data-bs-target="#modalForward" data-message-id="@msg.Id">Forward</a></li>
-                                            @if (mine)
-                                            {
-                                                <li><a class="dropdown-item" href="#" onclick="startEdit(@msg.Id)">Edit</a></li>
-                                                <li>
-                                                    <form asp-controller="Messages" asp-action="DeleteMessageForEveryone" method="post">
-                                                        @Html.AntiForgeryToken()
-                                                        <input type="hidden" name="messageId" value="@msg.Id" />
-                                                        <input type="hidden" name="conversationId" value="@selected.Id" />
-                                                        <button type="submit" class="dropdown-item text-danger">Delete for everyone</button>
-                                                    </form>
-                                                </li>
-                                            }
-                                            <li>
-                                                <form asp-controller="Messages" asp-action="DeleteMessageForMe" method="post">
-                                                    @Html.AntiForgeryToken()
-                                                    <input type="hidden" name="messageId" value="@msg.Id" />
-                                                    <input type="hidden" name="conversationId" value="@selected.Id" />
-                                                    <button type="submit" class="dropdown-item">Delete for me</button>
-                                                </form>
-                                            </li>
-                                        </ul>
-                                    </div>
-                                }
-                                @if (mine && !msg.IsDeleted)
-                                {
-                                    <form asp-controller="Messages" asp-action="EditMessage" method="post" class="d-none mt-1" id="edit-form-@msg.Id">
-                                        @Html.AntiForgeryToken()
-                                        <input type="hidden" name="messageId" value="@msg.Id" />
-                                        <input type="hidden" name="conversationId" value="@selected.Id" />
-                                        <input class="form-control form-control-sm" name="body" value="@msg.Body" />
-                                        <div class="mt-1 d-flex gap-1">
-                                            <button type="submit" class="btn btn-sm btn-primary">Save</button>
-                                            <button type="button" class="btn btn-sm btn-light" onclick="cancelEdit(@msg.Id)">Cancel</button>
-                                        </div>
-                                    </form>
-                                }
-                            </div>
+                            @await Html.PartialAsync("_MessageBubble", msg)
                         }
                     }
                 </div>
-                <form class="d-flex gap-2 p-2 border-top" asp-controller="Messages" asp-action="Send" method="post">
+                <form class="d-flex gap-2 p-2 border-top js-ajax-form" id="send-form" asp-controller="Messages" asp-action="Send" method="post">
                     @Html.AntiForgeryToken()
                     <input type="hidden" name="conversationId" value="@selected.Id" />
                     <input class="form-control" name="body" placeholder="Type a message…" autocomplete="off" />
@@ -350,15 +272,66 @@
 
 @section Scripts {
     <script>
-        document.getElementById('modalForward').addEventListener('show.bs.modal', function(event) {
-            document.getElementById('forwardMessageId').value = event.relatedTarget.getAttribute('data-message-id');
-        });
+        (function() {
+            const chatMessages = document.getElementById('chat-messages');
+            const conversationId = chatMessages ? parseInt(chatMessages.dataset.conversationId, 10) : null;
 
-        function startEdit(id) {
-            document.getElementById('edit-form-' + id).classList.remove('d-none');
-        }
-        function cancelEdit(id) {
-            document.getElementById('edit-form-' + id).classList.add('d-none');
-        }
+            async function insertOrReplaceMessage(messageId) {
+                const resp = await fetch(`/Messages/MessagePartial?messageId=${messageId}`, { headers: { 'X-Requested-With': 'XMLHttpRequest' } });
+                if (!resp.ok) return;
+                const html = await resp.text();
+                if (!html.trim()) return;
+
+                const existing = document.getElementById('msg-' + messageId);
+                if (existing) {
+                    existing.outerHTML = html;
+                } else if (chatMessages) {
+                    const empty = chatMessages.querySelector('[data-empty-state]');
+                    if (empty) empty.remove();
+                    chatMessages.insertAdjacentHTML('beforeend', html);
+                    chatMessages.scrollTop = chatMessages.scrollHeight;
+                }
+            }
+
+            function refreshConversationList() {
+                const list = document.getElementById('conversation-list');
+                if (!list) return;
+                fetch(`/Messages/ConversationListPartial?selected=${conversationId ?? ''}`, { headers: { 'X-Requested-With': 'XMLHttpRequest' } })
+                    .then(r => r.ok ? r.text() : null)
+                    .then(html => { if (html) list.outerHTML = html; });
+            }
+
+            if (window.appHub) {
+                window.appHub.on('ReceiveMessage', function(data) {
+                    if (conversationId && data.conversationId === conversationId) insertOrReplaceMessage(data.messageId);
+                });
+                window.appHub.on('ConversationActivity', function() {
+                    refreshConversationList();
+                });
+            }
+
+            window.addEventListener('apphub-reconnected', function() {
+                refreshConversationList();
+                location.reload();
+            });
+
+            document.querySelectorAll('.js-ajax-form').forEach(function(form) {
+                form.addEventListener('submit', function(e) {
+                    e.preventDefault();
+                    const formData = new FormData(form);
+                    fetch(form.action, { method: 'POST', body: formData, headers: { 'X-Requested-With': 'XMLHttpRequest' } })
+                        .then(function(resp) {
+                            if (resp.ok && form.id === 'send-form') form.reset();
+                        });
+                });
+            });
+
+            document.getElementById('modalForward')?.addEventListener('show.bs.modal', function(event) {
+                document.getElementById('forwardMessageId').value = event.relatedTarget.getAttribute('data-message-id');
+            });
+
+            window.startEdit = function(id) { document.getElementById('edit-form-' + id).classList.remove('d-none'); };
+            window.cancelEdit = function(id) { document.getElementById('edit-form-' + id).classList.add('d-none'); };
+        })();
     </script>
 }

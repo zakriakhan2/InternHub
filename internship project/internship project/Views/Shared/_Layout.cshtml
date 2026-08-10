@@ -108,6 +108,61 @@
 
     <script src="~/lib/bootstrap/dist/js/bootstrap.bundle.min.js"></script>
     <script src="~/js/site.js" asp-append-version="true"></script>
+
+    @if (User?.Identity?.IsAuthenticated == true)
+    {
+        <script src="https://cdnjs.cloudflare.com/ajax/libs/microsoft-signalr/8.0.0/signalr.min.js"></script>
+        <div id="toast-stack" style="position:fixed; top:16px; right:16px; z-index:1080; display:flex; flex-direction:column; gap:8px;"></div>
+        <script>
+                window.appHub = new signalR.HubConnectionBuilder()
+                    .withUrl('/hubs/app')
+                    .withAutomaticReconnect()
+                    .build();
+
+                window.appHubReady = window.appHub.start().catch(function(err) {
+                    console.error('SignalR connection failed', err);
+                });
+
+                window.appHub.onreconnected(function() {
+                    window.dispatchEvent(new CustomEvent('apphub-reconnected'));
+                });
+
+                function showToast(title, body) {
+                    const stack = document.getElementById('toast-stack');
+                    if (!stack) return;
+
+                    const el = document.createElement('div');
+                    el.className = 'toast show';
+                    el.style.cssText = 'min-width:260px;';
+
+                    const header = document.createElement('div');
+                    header.className = 'toast-header';
+                    const strong = document.createElement('strong');
+                    strong.className = 'me-auto';
+                    strong.textContent = title || 'Notification';
+                    const closeBtn = document.createElement('button');
+                    closeBtn.type = 'button';
+                    closeBtn.className = 'btn-close';
+                    closeBtn.onclick = () => el.remove();
+                    header.appendChild(strong);
+                    header.appendChild(closeBtn);
+
+                    const bodyDiv = document.createElement('div');
+                    bodyDiv.className = 'toast-body';
+                    bodyDiv.textContent = body || '';
+
+                    el.appendChild(header);
+                    el.appendChild(bodyDiv);
+                    stack.appendChild(el);
+                    setTimeout(() => el.remove(), 6000);
+                }
+
+                window.appHub.on('ReceiveNotification', function(n) {
+                    showToast(n.title, n.body);
+                });
+        </script>
+    }
+
     @await RenderSectionAsync("Scripts", required: false)
 </body>
 </html>
