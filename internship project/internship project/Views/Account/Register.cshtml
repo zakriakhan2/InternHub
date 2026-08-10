@@ -76,6 +76,8 @@
 
                 <form asp-controller="Account" asp-action="Register" method="post">
                     @Html.AntiForgeryToken()
+                    <div asp-validation-summary="All" class="alert alert-danger py-2 px-3 mb-3"></div>
+
                     <div class="row g-2 mb-3">
                         <div class="col">
                             <label class="form-label fw-semibold" for="firstName">First name</label>

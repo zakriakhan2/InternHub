@@ -142,7 +142,7 @@
                                 <strong class="small">@ConvTitle(conv)</strong>
                                 <small class="text-muted font-mono" style="font-size:10px;">@(lastMsg != null ? lastMsg.SentAt.ToString("h:mm tt") : "")</small>
                             </div>
-                            <small class="text-muted d-block text-truncate" style="max-width:170px;">@(lastMsg?.Body ?? (conv.IsGroup ? "Group created" : "No messages yet"))</small>
+                            <small class="text-muted d-block text-truncate" style="max-width:170px;">@(lastMsg == null ? (conv.IsGroup ? "Group created" : "No messages yet") : (lastMsg.IsDeleted ? "This message was deleted" : lastMsg.Body))</small>
                         </div>
                     </a>
                 }
@@ -161,6 +161,11 @@
                 <div class="p-2 px-3 border-bottom d-flex align-items-center gap-2">
                     <div class="avatar avatar-sm @(selected.IsGroup ? "avatar-4" : "avatar-2")">@ConvInitials(selected)</div>
                     <strong>@ConvTitle(selected)</strong>
+                    <form asp-controller="Messages" asp-action="DeleteConversationForMe" method="post" class="ms-auto">
+                        @Html.AntiForgeryToken()
+                        <input type="hidden" name="conversationId" value="@selected.Id" />
+                        <button type="submit" class="btn btn-sm btn-outline-danger">Delete chat</button>
+                    </form>
                 </div>
                 <div class="chat-messages">
                     @if (!selected.Messages.Any())
@@ -172,13 +177,66 @@
                         foreach (var msg in selected.Messages.OrderBy(m => m.SentAt))
                         {
                             bool mine = msg.SenderId == currentUserId;
-                            <div class="bubble @(mine ? "out" : "in")">
+                            <div class="bubble @(mine ? "out" : "in") position-relative" style="padding-right: 28px;">
                                 @if (selected.IsGroup && !mine)
                                 {
                                     <strong class="d-block" style="font-size:11px;">@msg.Sender.FullName</strong>
                                 }
-                                @msg.Body
+                                @if (msg.IsDeleted)
+                                {
+                                    <em class="text-muted small">This message was deleted</em>
+                                }
+                                else
+                                {
+                                    <span>@msg.Body</span>
+                                    @if (msg.IsEdited)
+                                    {
+                                        <span class="text-muted" style="font-size:10px;"> (edited)</span>
+                                    }
+                                }
                                 <span class="time">@msg.SentAt.ToString("h:mm tt")</span>
+                                @if (!msg.IsDeleted)
+                                {
+                                    <div class="dropdown d-inline-block position-absolute" style="top:6px; right:6px;">
+                                        <button class="btn btn-sm btn-link p-0 text-reset" data-bs-toggle="dropdown" style="line-height:1; opacity:0.85;">⋮</button>
+                                        <ul class="dropdown-menu dropdown-menu-end">
+                                            <li><a class="dropdown-item" href="#" data-bs-toggle="modal" data-bs-target="#modalForward" data-message-id="@msg.Id">Forward</a></li>
+                                            @if (mine)
+                                            {
+                                                <li><a class="dropdown-item" href="#" onclick="startEdit(@msg.Id)">Edit</a></li>
+                                                <li>
+                                                    <form asp-controller="Messages" asp-action="DeleteMessageForEveryone" method="post">
+                                                        @Html.AntiForgeryToken()
+                                                        <input type="hidden" name="messageId" value="@msg.Id" />
+                                                        <input type="hidden" name="conversationId" value="@selected.Id" />
+                                                        <button type="submit" class="dropdown-item text-danger">Delete for everyone</button>
+                                                    </form>
+                                                </li>
+                                            }
+                                            <li>
+                                                <form asp-controller="Messages" asp-action="DeleteMessageForMe" method="post">
+                                                    @Html.AntiForgeryToken()
+                                                    <input type="hidden" name="messageId" value="@msg.Id" />
+                                                    <input type="hidden" name="conversationId" value="@selected.Id" />
+                                                    <button type="submit" class="dropdown-item">Delete for me</button>
+                                                </form>
+                                            </li>
+                                        </ul>
+                                    </div>
+                                }
+                                @if (mine && !msg.IsDeleted)
+                                {
+                                    <form asp-controller="Messages" asp-action="EditMessage" method="post" class="d-none mt-1" id="edit-form-@msg.Id">
+                                        @Html.AntiForgeryToken()
+                                        <input type="hidden" name="messageId" value="@msg.Id" />
+                                        <input type="hidden" name="conversationId" value="@selected.Id" />
+                                        <input class="form-control form-control-sm" name="body" value="@msg.Body" />
+                                        <div class="mt-1 d-flex gap-1">
+                                            <button type="submit" class="btn btn-sm btn-primary">Save</button>
+                                            <button type="button" class="btn btn-sm btn-light" onclick="cancelEdit(@msg.Id)">Cancel</button>
+                                        </div>
+                                    </form>
+                                }
                             </div>
                         }
                     }
@@ -223,6 +281,35 @@
     </div>
 </div>
 
+<!-- Forward message modal -->
+<div class="modal fade" id="modalForward" tabindex="-1">
+    <div class="modal-dialog">
+        <div class="modal-content">
+            <form asp-controller="Messages" asp-action="ForwardMessage" method="post">
+                @Html.AntiForgeryToken()
+                <input type="hidden" name="messageId" id="forwardMessageId" />
+                <div class="modal-header">
+                    <h5 class="modal-title mb-0">Forward message</h5>
+                    <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+                </div>
+                <div class="modal-body">
+                    <label class="form-label fw-semibold">Send to</label>
+                    <select class="form-select" name="targetConversationId">
+                        @foreach (var c in Model)
+                        {
+                            <option value="@c.Id">@ConvTitle(c)</option>
+                        }
+                    </select>
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-light" data-bs-dismiss="modal">Cancel</button>
+                    <button type="submit" class="btn btn-primary">Forward</button>
+                </div>
+            </form>
+        </div>
+    </div>
+</div>
+
 @if (canCreateGroups)
 {
     <div class="modal fade" id="modalNewGroup" tabindex="-1">
@@ -259,4 +346,19 @@
             </div>
         </div>
     </div>
+}
+
+@section Scripts {
+    <script>
+        document.getElementById('modalForward').addEventListener('show.bs.modal', function(event) {
+            document.getElementById('forwardMessageId').value = event.relatedTarget.getAttribute('data-message-id');
+        });
+
+        function startEdit(id) {
+            document.getElementById('edit-form-' + id).classList.remove('d-none');
+        }
+        function cancelEdit(id) {
+            document.getElementById('edit-form-' + id).classList.add('d-none');
+        }
+    </script>
 }

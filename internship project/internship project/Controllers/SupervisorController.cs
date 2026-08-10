@@ -39,9 +39,12 @@ namespace InternHub.Controllers
                 .OrderByDescending(t => t.CreatedAt)
                 .ToListAsync();
 
+            ViewBag.Students = await _db.Users
+                .Where(u => u.SupervisorId == CurrentUserId)
+                .ToListAsync();
+
             return View(tasks);
         }
-
         [HttpPost]
         [ValidateAntiForgeryToken]
         public async Task<IActionResult> AssignTask(int studentId, string title, string description, DateTime? dueDate)

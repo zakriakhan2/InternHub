@@ -14,6 +14,8 @@ namespace InternHub.Data
         public DbSet<ConversationParticipant> ConversationParticipants => Set<ConversationParticipant>();
         public DbSet<Message> Messages => Set<Message>();
 
+        public DbSet<MessageDeletion> MessageDeletions => Set<MessageDeletion>();
+
         protected override void OnModelCreating(ModelBuilder modelBuilder)
         {
             base.OnModelCreating(modelBuilder);
@@ -52,6 +54,22 @@ namespace InternHub.Data
             modelBuilder.Entity<ConversationParticipant>()
                 .HasIndex(cp => new { cp.ConversationId, cp.UserId })
                 .IsUnique();
+
+            modelBuilder.Entity<MessageDeletion>()
+    .HasIndex(md => new { md.MessageId, md.UserId })
+    .IsUnique();
+
+            modelBuilder.Entity<MessageDeletion>()
+                .HasOne(md => md.Message)
+                .WithMany(m => m.DeletionsFor)
+                .HasForeignKey(md => md.MessageId)
+                .OnDelete(DeleteBehavior.Cascade);
+
+            modelBuilder.Entity<MessageDeletion>()
+                .HasOne(md => md.User)
+                .WithMany()
+                .HasForeignKey(md => md.UserId)
+                .OnDelete(DeleteBehavior.Restrict);
         }
     }
 }

@@ -22,7 +22,7 @@ namespace InternHub.Controllers
         public async Task<IActionResult> Index(int? conversationId)
         {
             var conversationIds = await _db.ConversationParticipants
-                .Where(cp => cp.UserId == CurrentUserId)
+                .Where(cp => cp.UserId == CurrentUserId && !cp.IsHidden)
                 .Select(cp => cp.ConversationId)
                 .ToListAsync();
 
@@ -30,7 +30,16 @@ namespace InternHub.Controllers
                 .Where(c => conversationIds.Contains(c.Id))
                 .Include(c => c.Participants).ThenInclude(p => p.User)
                 .Include(c => c.Messages).ThenInclude(m => m.Sender)
+                .Include(c => c.Messages).ThenInclude(m => m.DeletionsFor)
                 .ToListAsync();
+
+            foreach (var c in conversations)
+            {
+                c.Messages = c.Messages
+                    .Where(m => !m.DeletionsFor.Any(d => d.UserId == CurrentUserId))
+                    .OrderBy(m => m.SentAt)
+                    .ToList();
+            }
 
             var ordered = conversations
                 .OrderByDescending(c => c.Messages.Any() ? c.Messages.Max(m => m.SentAt) : c.CreatedAt)
@@ -59,6 +68,14 @@ namespace InternHub.Controllers
                 _db.Conversations.Add(existing);
                 await _db.SaveChangesAsync();
             }
+            else
+            {
+                var participants = await _db.ConversationParticipants
+                    .Where(cp => cp.ConversationId == existing.Id)
+                    .ToListAsync();
+                foreach (var p in participants) p.IsHidden = false;
+                await _db.SaveChangesAsync();
+            }
 
             return RedirectToAction("Index", new { conversationId = existing.Id });
         }
@@ -85,16 +102,116 @@ namespace InternHub.Controllers
         [ValidateAntiForgeryToken]
         public async Task<IActionResult> Send(int conversationId, string body)
         {
-            bool isParticipant = await _db.ConversationParticipants
-                .AnyAsync(cp => cp.ConversationId == conversationId && cp.UserId == CurrentUserId);
+            var participant = await _db.ConversationParticipants
+                .FirstOrDefaultAsync(cp => cp.ConversationId == conversationId && cp.UserId == CurrentUserId);
 
-            if (!isParticipant) return Forbid();
+            if (participant == null) return Forbid();
             if (string.IsNullOrWhiteSpace(body)) return RedirectToAction("Index", new { conversationId });
 
             _db.Messages.Add(new Message { ConversationId = conversationId, SenderId = CurrentUserId, Body = body });
+
+            var hiddenParticipants = await _db.ConversationParticipants
+                .Where(cp => cp.ConversationId == conversationId && cp.IsHidden)
+                .ToListAsync();
+            foreach (var p in hiddenParticipants) p.IsHidden = false;
+
             await _db.SaveChangesAsync();
 
             return RedirectToAction("Index", new { conversationId });
+        }
+
+        [HttpPost]
+        [ValidateAntiForgeryToken]
+        public async Task<IActionResult> EditMessage(int messageId, string body, int conversationId)
+        {
+            var message = await _db.Messages.FindAsync(messageId);
+            if (message == null || message.SenderId != CurrentUserId || message.IsDeleted) return Forbid();
+            if (string.IsNullOrWhiteSpace(body)) return RedirectToAction("Index", new { conversationId });
+
+            message.Body = body;
+            message.IsEdited = true;
+            await _db.SaveChangesAsync();
+
+            return RedirectToAction("Index", new { conversationId });
+        }
+
+        [HttpPost]
+        [ValidateAntiForgeryToken]
+        public async Task<IActionResult> DeleteMessageForEveryone(int messageId, int conversationId)
+        {
+            var message = await _db.Messages.FindAsync(messageId);
+            if (message == null || message.SenderId != CurrentUserId) return Forbid();
+
+            message.IsDeleted = true;
+            message.Body = string.Empty;
+            await _db.SaveChangesAsync();
+
+            return RedirectToAction("Index", new { conversationId });
+        }
+
+        [HttpPost]
+        [ValidateAntiForgeryToken]
+        public async Task<IActionResult> DeleteMessageForMe(int messageId, int conversationId)
+        {
+            bool isParticipant = await _db.ConversationParticipants
+                .AnyAsync(cp => cp.ConversationId == conversationId && cp.UserId == CurrentUserId);
+            if (!isParticipant) return Forbid();
+
+            bool alreadyHidden = await _db.MessageDeletions
+                .AnyAsync(d => d.MessageId == messageId && d.UserId == CurrentUserId);
+
+            if (!alreadyHidden)
+            {
+                _db.MessageDeletions.Add(new MessageDeletion { MessageId = messageId, UserId = CurrentUserId });
+                await _db.SaveChangesAsync();
+            }
+
+            return RedirectToAction("Index", new { conversationId });
+        }
+
+        [HttpPost]
+        [ValidateAntiForgeryToken]
+        public async Task<IActionResult> ForwardMessage(int messageId, int targetConversationId)
+        {
+            var message = await _db.Messages.FindAsync(messageId);
+            if (message == null || message.IsDeleted) return Forbid();
+
+            bool sourceParticipant = await _db.ConversationParticipants
+                .AnyAsync(cp => cp.ConversationId == message.ConversationId && cp.UserId == CurrentUserId);
+            bool targetParticipant = await _db.ConversationParticipants
+                .AnyAsync(cp => cp.ConversationId == targetConversationId && cp.UserId == CurrentUserId);
+
+            if (!sourceParticipant || !targetParticipant) return Forbid();
+
+            _db.Messages.Add(new Message
+            {
+                ConversationId = targetConversationId,
+                SenderId = CurrentUserId,
+                Body = message.Body
+            });
+
+            var hiddenParticipants = await _db.ConversationParticipants
+                .Where(cp => cp.ConversationId == targetConversationId && cp.IsHidden)
+                .ToListAsync();
+            foreach (var p in hiddenParticipants) p.IsHidden = false;
+
+            await _db.SaveChangesAsync();
+
+            return RedirectToAction("Index", new { conversationId = targetConversationId });
+        }
+
+        [HttpPost]
+        [ValidateAntiForgeryToken]
+        public async Task<IActionResult> DeleteConversationForMe(int conversationId)
+        {
+            var participant = await _db.ConversationParticipants
+                .FirstOrDefaultAsync(cp => cp.ConversationId == conversationId && cp.UserId == CurrentUserId);
+            if (participant == null) return Forbid();
+
+            participant.IsHidden = true;
+            await _db.SaveChangesAsync();
+
+            return RedirectToAction("Index");
         }
     }
 }

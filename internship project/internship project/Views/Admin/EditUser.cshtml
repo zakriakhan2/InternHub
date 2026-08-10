@@ -1,0 +1,98 @@
+﻿@model InternHub.Models.User
+@using InternHub.Models
+@{
+    Layout = "~/Views/Shared/_Layout.cshtml";
+    ViewData["Title"] = "Edit account";
+    ViewBag.Eyebrow = "Admin";
+    ViewBag.RoleTag = "Admin";
+
+    string fullName = User.Identity?.Name ?? "Admin";
+    string initials = string.Concat(fullName.Split(' ', StringSplitOptions.RemoveEmptyEntries).Select(w => w[0])).ToUpper();
+    if (initials.Length > 2) initials = initials.Substring(0, 2);
+    if (initials.Length == 0) initials = "?";
+}
+
+@section SidebarNav {
+    <ul class="nav flex-column gap-1">
+        <li class="nav-item">
+            <a class="nav-link" asp-controller="Admin" asp-action="Dashboard">
+                <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="3" width="7" height="7" /><rect x="14" y="3" width="7" height="7" /><rect x="3" y="14" width="7" height="7" /><rect x="14" y="14" width="7" height="7" /></svg>
+                Overview
+            </a>
+        </li>
+        <li class="nav-item">
+            <a class="nav-link active" asp-controller="Admin" asp-action="AllUsers">
+                <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M16 21v-2a4 4 0 0 0-4-4H6a4 4 0 0 0-4 4v2" /><circle cx="9" cy="7" r="4" /></svg>
+                All users
+            </a>
+        </li>
+        <li class="nav-item">
+            <a class="nav-link" asp-controller="Admin" asp-action="Assignments">
+                <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2" /><circle cx="9" cy="7" r="4" /></svg>
+                Assignments
+            </a>
+        </li>
+        <li class="nav-item">
+            <a class="nav-link" asp-controller="Messages" asp-action="Index">
+                <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z" /></svg>
+                Messages &amp; groups
+            </a>
+        </li>
+    </ul>
+}
+
+@section SidebarUser {
+    <a href="#" class="sidebar-user text-decoration-none">
+        <div class="avatar avatar-ink">@initials</div>
+        <div><strong class="d-block text-white" style="font-size:.85rem;">@fullName</strong><small>Admin</small></div>
+    </a>
+}
+
+@section TopbarActions {
+    <a asp-controller="Admin" asp-action="AllUsers" class="btn btn-light btn-sm">← Back</a>
+}
+
+<div class="row">
+    <div class="col-lg-6">
+        <div class="card border-0 shadow-sm">
+            <div class="card-body">
+                <div asp-validation-summary="All" class="alert alert-danger py-2 px-3 mb-3"></div>
+
+                <form asp-controller="Admin" asp-action="EditUser" asp-route-id="@Model.Id" method="post">
+                    @Html.AntiForgeryToken()
+                    <div class="row g-2 mb-3">
+                        <div class="col">
+                            <label class="form-label fw-semibold">First name</label>
+                            <input class="form-control" name="firstName" value="@Model.FirstName" required />
+                        </div>
+                        <div class="col">
+                            <label class="form-label fw-semibold">Last name</label>
+                            <input class="form-control" name="lastName" value="@Model.LastName" required />
+                        </div>
+                    </div>
+                    <div class="mb-3">
+                        <label class="form-label fw-semibold">Email</label>
+                        <input class="form-control" type="email" name="email" value="@Model.Email" required />
+                    </div>
+                    <div class="mb-3">
+                        <label class="form-label fw-semibold">Account type</label>
+                        <select class="form-select" name="role">
+                            <option value="Admin" selected="@(Model.Role == UserRole.Admin)">Admin</option>
+                            <option value="Supervisor" selected="@(Model.Role == UserRole.Supervisor)">Supervisor</option>
+                            <option value="Student" selected="@(Model.Role == UserRole.Student)">Student</option>
+                        </select>
+                        @if (Model.Role == UserRole.Supervisor && Model.AssignedStudents.Any())
+                        {
+                            <div class="form-text text-warning">Changing this away from Supervisor unassigns their @Model.AssignedStudents.Count current student(s).</div>
+                        }
+                    </div>
+                    <div class="d-flex gap-2">
+                        <button type="submit" class="btn btn-primary">Save changes</button>
+                        <a asp-controller="Admin" asp-action="AllUsers" class="btn btn-light">Cancel</a>
+                    </div>
+                </form>
+            </div>
+        </div>
+        <p class="text-muted small mt-2">Joined @Model.CreatedAt.ToString("MMM d, yyyy")</p>
+    </div>
+</div>
