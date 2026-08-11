@@ -72,7 +72,7 @@
                 <div class="card border-0 shadow-sm h-100">
                     <div class="card-body">
                         <div class="d-flex align-items-center gap-2 mb-2">
-                            <div class="avatar avatar-3">@student.FirstName[0]@student.LastName[0]</div>
+                            @await Html.PartialAsync("_Avatar", student, new ViewDataDictionary(ViewData) { { "Color", "avatar-3" } })
                             <div><strong class="d-block">@student.FullName</strong><small class="text-muted">@student.Email</small></div>
                         </div>
                         <a asp-controller="Messages" asp-action="Index" class="btn btn-outline-secondary btn-sm">Message</a>

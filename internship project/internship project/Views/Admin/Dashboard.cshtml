@@ -98,7 +98,12 @@
                     foreach (var u in Model)
                     {
                         <tr>
-                            <td><div class="d-flex align-items-center gap-2"><div class="avatar avatar-sm avatar-1">@u.FirstName[0]@u.LastName[0]</div><div><strong class="d-block">@u.FullName</strong><small class="text-muted">@u.Email</small></div></div></td>
+                            <td>
+                                <div class="d-flex align-items-center gap-2">
+                                    @await Html.PartialAsync("_Avatar", u, new ViewDataDictionary(ViewData) { { "Size", "avatar-sm" }, { "Color", "avatar-1" } })
+                                    <div><strong class="d-block">@u.FullName</strong><small class="text-muted">@u.Email</small></div>
+                                </div>
+                            </td>
                             <td>
                                 @if (u.Role == UserRole.Admin)
                                 {

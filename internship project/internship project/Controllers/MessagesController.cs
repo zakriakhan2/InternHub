@@ -199,6 +199,36 @@ namespace InternHub.Controllers
 
         [HttpPost]
         [ValidateAntiForgeryToken]
+        public async Task<IActionResult> ClearChat(int conversationId)
+        {
+            bool isParticipant = await _db.ConversationParticipants
+                .AnyAsync(cp => cp.ConversationId == conversationId && cp.UserId == CurrentUserId);
+            if (!isParticipant) return Forbid();
+
+            var messageIds = await _db.Messages
+                .Where(m => m.ConversationId == conversationId)
+                .Select(m => m.Id)
+                .ToListAsync();
+
+            var alreadyHiddenIds = await _db.MessageDeletions
+                .Where(d => d.UserId == CurrentUserId && messageIds.Contains(d.MessageId))
+                .Select(d => d.MessageId)
+                .ToListAsync();
+
+            var toHide = messageIds.Except(alreadyHiddenIds);
+
+            foreach (var messageId in toHide)
+            {
+                _db.MessageDeletions.Add(new MessageDeletion { MessageId = messageId, UserId = CurrentUserId });
+            }
+
+            await _db.SaveChangesAsync();
+
+            return RedirectToAction("Index", new { conversationId });
+        }
+
+        [HttpPost]
+        [ValidateAntiForgeryToken]
         public async Task<IActionResult> ForwardMessage(int messageId, int targetConversationId)
         {
             var message = await _db.Messages.FindAsync(messageId);

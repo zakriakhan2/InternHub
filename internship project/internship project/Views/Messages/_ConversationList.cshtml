@@ -27,7 +27,17 @@
         {
             var lastMsg = conv.Messages.OrderByDescending(m => m.SentAt).FirstOrDefault();
             <a asp-controller="Messages" asp-action="Index" asp-route-conversationId="@conv.Id" class="conv text-decoration-none text-dark @(conv.Id == selectedId ? "active" : "")">
-                <div class="avatar avatar-sm @(conv.IsGroup ? "avatar-4" : "avatar-2")">@ConvInitials(conv)</div>
+                @{
+                    var otherUser = !conv.IsGroup ? conv.Participants.FirstOrDefault(p => p.UserId != currentUserId)?.User : null;
+                }
+                @if (!conv.IsGroup && otherUser != null && !string.IsNullOrEmpty(otherUser.ProfilePicturePath))
+                {
+                    <img src="@otherUser.ProfilePicturePath" class="avatar avatar-sm" style="object-fit:cover;" alt="" />
+                }
+                else
+                {
+                    <div class="avatar avatar-sm @(conv.IsGroup ? "avatar-4" : "avatar-2")">@ConvInitials(conv)</div>
+                }
                 <div class="flex-fill">
                     <div class="d-flex justify-content-between">
                         <strong class="small">@ConvTitle(conv)</strong>

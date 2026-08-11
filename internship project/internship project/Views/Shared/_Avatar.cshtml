@@ -1,0 +1,15 @@
+﻿@model InternHub.Models.User
+@{
+    string sizeClass = ViewData["Size"] as string ?? "";
+    string colorClass = ViewData["Color"] as string ?? "avatar-2";
+    string initials = string.Concat(Model.FullName.Split(' ', StringSplitOptions.RemoveEmptyEntries).Select(w => w[0])).ToUpper();
+    if (initials.Length > 2) initials = initials.Substring(0, 2);
+}
+@if (!string.IsNullOrEmpty(Model.ProfilePicturePath))
+{
+    <img src="@Model.ProfilePicturePath" class="avatar @sizeClass" style="object-fit:cover;" alt="" />
+}
+else
+{
+    <div class="avatar @sizeClass @colorClass">@initials</div>
+}

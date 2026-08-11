@@ -2,6 +2,73 @@
 @using InternHub.Models
 @{
     bool isSupervisor = User.IsInRole("Supervisor");
+    bool isAdmin = User.IsInRole("Admin");
+
+    ViewData["Title"] = Model.Title;
+    ViewBag.Eyebrow = "Task";
+    ViewBag.RoleTag = isAdmin ? "Admin" : (isSupervisor ? "Supervisor" : "Student");
+}
+
+@section SidebarNav {
+    <ul class="nav flex-column gap-1">
+        @if (isAdmin)
+        {
+            <li class="nav-item">
+                <a class="nav-link" asp-controller="Admin" asp-action="Dashboard">
+                    <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="3" width="7" height="7" /><rect x="14" y="3" width="7" height="7" /><rect x="3" y="14" width="7" height="7" /><rect x="14" y="14" width="7" height="7" /></svg>
+                    Overview
+                </a>
+            </li>
+            <li class="nav-item">
+                <a class="nav-link" asp-controller="Admin" asp-action="AllUsers">
+                    <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M16 21v-2a4 4 0 0 0-4-4H6a4 4 0 0 0-4 4v2" /><circle cx="9" cy="7" r="4" /></svg>
+                    All users
+                </a>
+            </li>
+            <li class="nav-item">
+                <a class="nav-link active" asp-controller="Admin" asp-action="Assignments">
+                    <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2" /><circle cx="9" cy="7" r="4" /></svg>
+                    Assignments
+                </a>
+            </li>
+        }
+        else if (isSupervisor)
+        {
+            <li class="nav-item">
+                <a class="nav-link" asp-controller="Supervisor" asp-action="Dashboard">
+                    <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2" /><circle cx="9" cy="7" r="4" /></svg>
+                    My students
+                </a>
+            </li>
+            <li class="nav-item">
+                <a class="nav-link active" asp-controller="Supervisor" asp-action="Tasks">
+                    <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M9 11l3 3L22 4" /><path d="M21 12v7a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11" /></svg>
+                    Tasks
+                </a>
+            </li>
+        }
+        else
+        {
+            <li class="nav-item">
+                <a class="nav-link" asp-controller="Student" asp-action="Dashboard">
+                    <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="3" width="7" height="7" /><rect x="14" y="3" width="7" height="7" /><rect x="3" y="14" width="7" height="7" /><rect x="14" y="14" width="7" height="7" /></svg>
+                    Overview
+                </a>
+            </li>
+            <li class="nav-item">
+                <a class="nav-link active" asp-controller="Student" asp-action="Tasks">
+                    <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M9 11l3 3L22 4" /><path d="M21 12v7a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11" /></svg>
+                    My tasks
+                </a>
+            </li>
+        }
+        <li class="nav-item">
+            <a class="nav-link" asp-controller="Messages" asp-action="Index">
+                <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z" /></svg>
+                Messages &amp; groups
+            </a>
+        </li>
+    </ul>
 }
 
 <div class="mb-3">

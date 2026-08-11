@@ -45,7 +45,7 @@
                     <strong class="d-block mb-1">Your supervisor</strong>
                     <small class="text-muted d-block mb-3">Assigned by admin</small>
                     <div class="d-flex align-items-center gap-3">
-                        <div class="avatar avatar-lg avatar-2">@supervisor.FirstName[0]@supervisor.LastName[0]</div>
+                        @await Html.PartialAsync("_Avatar", supervisor, new ViewDataDictionary(ViewData) { { "Size", "avatar-lg" }, { "Color", "avatar-2" } })
                         <div><strong class="d-block" style="font-family:var(--f-display);">@supervisor.FullName</strong><small class="text-muted">@supervisor.Email</small></div>
                         <a asp-controller="Messages" asp-action="Index" class="btn btn-outline-secondary btn-sm ms-auto">Message</a>
                     </div>
